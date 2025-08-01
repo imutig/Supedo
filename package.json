@@ -1,0 +1,27 @@
+{
+  "name": "supedo-discord-bot",
+  "version": "1.0.0",
+  "description": "A Discord bot for role management and ticket system",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "watch": "tsc -w",
+    "deploy": "ts-node src/deploy.ts"
+  },
+  "keywords": ["discord", "bot", "roles", "tickets"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1",
+    "mysql2": "^3.6.5",
+    "typeorm": "^0.3.17"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
