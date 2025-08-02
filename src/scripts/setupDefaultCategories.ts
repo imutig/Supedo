@@ -61,7 +61,7 @@ export async function setupDefaultCategories(guildId: string, discordCategoryId?
     console.log('Default categories setup completed');
     process.exit(0);
   } catch (error) {
-    console.error('Error setting up default categories:', error);
+    console.error('[ERREUR] Erreur lors de la configuration des catégories par défaut :', error);
     process.exit(1);
   }
 }

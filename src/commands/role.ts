@@ -7,9 +7,15 @@ module.exports = {
 
   async execute(interaction: any) {
     try {
+      console.log(`🎭 [ROLE COMMAND] Commande /role exécutée par ${interaction.user.tag} (${interaction.user.id})`);
+      console.log(`🏰 [ROLE COMMAND] Serveur: ${interaction.guild.name} (${interaction.guild.id})`);
+      
       const member = interaction.member;
       const hasManageRoles = member.permissions.has(PermissionFlagsBits.ManageRoles);
+      
+      console.log(`🔐 [ROLE COMMAND] Permissions - ManageRoles: ${hasManageRoles ? 'Oui' : 'Non'}`);
 
+      console.log(`📝 [ROLE COMMAND] Création de l'embed principal`);
       const embed = new EmbedBuilder()
         .setTitle('🎭 Gestion des Rôles')
         .setDescription('Choisissez une action dans le menu ci-dessous')
@@ -22,6 +28,7 @@ module.exports = {
         )
         .setTimestamp();
 
+      console.log(`🔘 [ROLE COMMAND] Création des boutons utilisateur`);
       // User buttons (everyone can use these)
       const userRow = new ActionRowBuilder<ButtonBuilder>()
         .addComponents(
@@ -46,6 +53,7 @@ module.exports = {
 
       // Admin buttons (only for users with Manage Roles permission)
       if (hasManageRoles) {
+        console.log(`⚙️ [ROLE COMMAND] Ajout des boutons d'administration`);
         embed.addFields(
           { name: '⚙️ Administration', value: 'Gérer les groupes de rôles (Admin uniquement)', inline: false }
         );
@@ -65,16 +73,21 @@ module.exports = {
           );
 
         components.push(adminRow);
+      } else {
+        console.log(`ℹ️ [ROLE COMMAND] Utilisateur sans permissions d'administration`);
       }
 
+      console.log(`📤 [ROLE COMMAND] Envoi de la réponse avec ${components.length} composant(s)`);
       await interaction.reply({ 
         embeds: [embed], 
         components: components,
         flags: MessageFlags.Ephemeral 
       });
+      
+      console.log(`✅ [ROLE COMMAND] Commande /role exécutée avec succès pour ${interaction.user.tag}`);
 
     } catch (error) {
-      console.error('Error in role command:', error);
+      console.error(`💥 [ROLE COMMAND] Erreur dans la commande role pour ${interaction.user.tag} :`, error);
       
       if (!interaction.replied && !interaction.deferred) {
         try {
@@ -83,7 +96,7 @@ module.exports = {
             flags: MessageFlags.Ephemeral 
           });
         } catch (replyError) {
-          console.error('Failed to send error reply:', replyError);
+          console.error('[ERREUR] Échec de l\'envoi de la réponse d\'erreur :', replyError);
         }
       }
       throw error;

@@ -14,7 +14,7 @@ export class TicketPanel {
   @Column({ name: 'message_id' })
   messageId: string;
 
-  @Column({ name: 'panel_title', default: 'Système de Tickets' })
+  @Column({ name: 'panel_title', default: 'Système de tickets' })
   panelTitle: string;
 
   @Column({ name: 'panel_description', type: 'text', nullable: true })

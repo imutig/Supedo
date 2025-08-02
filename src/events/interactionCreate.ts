@@ -1,27 +1,34 @@
 import { Events, MessageFlags } from 'discord.js';
 import { ClientWithCommands } from '../index';
-import { handleRoleButtons, handleTicketButtons, handleCloseTicket, handleConfirmClose, handleRoleGroupSelection } from '../utils/buttonHandler';
-import { handleRoleRequest, handleIndividualRole, handleRoleGroupRequest, handleRoleBack, handleIndividualRoleSelection, handleRoleRemove, handleRoleList, handleRoleGroupManage, handleRoleRemoveSelect, handleRoleGroupCreate, handleRoleGroupList, handleRoleGroupDelete, handleRoleGroupDeleteSelect, handleRoleGroupCreateSelect, handleRolePending, handleRoleGroupEdit, handleRoleGroupEditSelect, handleRoleGroupEditName, handleRoleGroupEditDesc, handleRoleGroupNameInput, handleRoleGroupDescInput, handleGroupApproval, handleGroupDenial, handlePendingDelete, handlePendingClear, handlePendingRefresh } from '../utils/roleMenuHandler';
+import { handleRoleButtons, handleTicketButtons, handleCloseTicket, handleConfirmClose, handleRoleGroupSelection, handleRenameTicket, handleTicketRenameModal, handleInfoButtons } from '../utils/buttonHandler';
+import { handleRoleRequest, handleIndividualRole, handleRoleGroupRequest, handleRoleBack, handleIndividualRoleSelection, handleRoleRemove, handleRoleList, handleRoleGroupManage, handleRoleRemoveSelect, handleRoleGroupCreate, handleRoleGroupList, handleRoleGroupDelete, handleRoleGroupDeleteSelect, handleRoleGroupCreateSelect, handleRolePending, handleRoleGroupEdit, handleRoleGroupEditSelect, handleRoleGroupEditName, handleRoleGroupEditDesc, handleRoleGroupNameInput, handleRoleGroupDescInput, handleGroupApproval, handleGroupDenial, handlePendingDelete, handlePendingClear, handlePendingRefresh, handleApproveRemoval, handleDenyRemoval } from '../utils/roleMenuHandler';
 import { handleTicketCreatePanel, handleTicketPanelChannel, handleTicketPanelSetup, handleTicketBack, handleTicketManageCategories, handleTicketCustomize, handleTicketStats, handleTicketDeletePanel, handleTicketListPanels, handleCategoryCreate, handleCategoryCreateModal, handleCategoryEdit, handleCategoryDelete, handleCategoryEditSelect, handleCategoryEditModal, handleCategoryDeleteSelect, handleCategoryDeleteConfirm, handleCategorySelectDiscord, handleCategoryStyleSelect, handleCategoryEditStyleSelect, handleCategoryEditDiscordSelect, handlePanelCustomizeSelect, handlePanelCustomizeModal, handlePanelDeleteSelect, handlePanelDeleteConfirm } from '../utils/ticketMenuHandler';
 
 module.exports = {
   name: Events.InteractionCreate,
   async execute(interaction: any) {
+    console.log(`🎯 [INTERACTION] Nouvelle interaction reçue de ${interaction.user.tag} (${interaction.user.id})`);
+    console.log(`📋 [INTERACTION] Type: ${interaction.type}, Serveur: ${interaction.guild?.name || 'DM'}`);
+    
     // Handle slash commands
     if (interaction.isChatInputCommand()) {
+      console.log(`⚡ [SLASH COMMAND] Commande: /${interaction.commandName}`);
+      
       const client = interaction.client as ClientWithCommands;
       const command = client.commands.get(interaction.commandName);
 
       if (!command) {
-        console.error(`No command matching ${interaction.commandName} was found.`);
+        console.error(`❌ [SLASH COMMAND] Aucune commande correspondant à ${interaction.commandName} n'a été trouvée.`);
         return;
       }
 
+      console.log(`✅ [SLASH COMMAND] Commande ${interaction.commandName} trouvée, exécution...`);
       try {
         await command.execute(interaction);
+        console.log(`✅ [SLASH COMMAND] Commande ${interaction.commandName} exécutée avec succès pour ${interaction.user.tag}`);
       } catch (error) {
-        console.error('Command execution error:', error);
-        const errorMessage = 'There was an error while executing this command!';
+        console.error(`💥 [SLASH COMMAND] Erreur d'exécution de commande ${interaction.commandName} pour ${interaction.user.tag} :`, error);
+        const errorMessage = 'Une erreur s\'est produite lors de l\'exécution de cette commande !';
         
         try {
           if (interaction.replied || interaction.deferred) {
@@ -30,22 +37,28 @@ module.exports = {
             await interaction.reply({ content: errorMessage, flags: MessageFlags.Ephemeral });
           }
         } catch (replyError) {
-          console.error('Failed to send error message to user:', replyError);
+          console.error(`💥 [SLASH COMMAND] Échec de l'envoi du message d'erreur à l'utilisateur ${interaction.user.tag} :`, replyError);
         }
       }
     }
     
     // Handle button interactions
     else if (interaction.isButton()) {
+      console.log(`🔘 [BUTTON] Bouton cliqué: ${interaction.customId} par ${interaction.user.tag}`);
+      
       try {
         // Role management buttons
         if (interaction.customId.startsWith('role_request_')) {
+          console.log(`👤 [BUTTON] Traitement demande de rôle`);
           await handleRoleRequest(interaction);
         } else if (interaction.customId.startsWith('role_individual_')) {
+          console.log(`🎭 [BUTTON] Traitement rôle individuel`);
           await handleIndividualRole(interaction);
         } else if (interaction.customId.startsWith('rolegroup_request_')) {
+          console.log(`👥 [BUTTON] Traitement demande de groupe de rôles`);
           await handleRoleGroupRequest(interaction);
         } else if (interaction.customId.startsWith('role_back_')) {
+          console.log(`🔙 [BUTTON] Retour menu rôles`);
           await handleRoleBack(interaction);
         } else if (interaction.customId.startsWith('role_remove_')) {
           await handleRoleRemove(interaction);
@@ -71,6 +84,12 @@ module.exports = {
         // Existing role approval/denial buttons
         else if (interaction.customId.startsWith('approve_role_') || interaction.customId.startsWith('deny_role_')) {
           await handleRoleButtons(interaction);
+        } 
+        // Role removal approval/denial buttons
+        else if (interaction.customId.startsWith('approve_removal_')) {
+          await handleApproveRemoval(interaction);
+        } else if (interaction.customId.startsWith('deny_removal_')) {
+          await handleDenyRemoval(interaction);
         } 
         // Group approval/denial buttons
         else if (interaction.customId.startsWith('approve_group_')) {
@@ -113,14 +132,21 @@ module.exports = {
           await handleTicketButtons(interaction);
         } else if (interaction.customId.startsWith('close_ticket_')) {
           await handleCloseTicket(interaction);
+        } else if (interaction.customId.startsWith('rename_ticket_')) {
+          await handleRenameTicket(interaction);
         } else if (interaction.customId.startsWith('confirm_close_')) {
           await handleConfirmClose(interaction);
         } else if (interaction.customId === 'cancel_close') {
-          await interaction.update({ content: 'Ticket close cancelled.', components: [] });
+          await interaction.update({ content: 'Fermeture du ticket annulée.', components: [] });
+        }
+        // Info command buttons
+        else if (interaction.customId.startsWith('info_refresh_') || interaction.customId.startsWith('info_detailed_')) {
+          console.log(`ℹ️ [BUTTON] Bouton info traité`);
+          await handleInfoButtons(interaction);
         }
       } catch (error) {
-        console.error('Button interaction error:', error);
-        const errorMessage = 'There was an error while processing this button!';
+        console.error('[ERREUR] Erreur d\'interaction de bouton :', error);
+        const errorMessage = 'Une erreur s\'est produite lors du traitement de ce bouton !';
         
         try {
           if (interaction.replied || interaction.deferred) {
@@ -129,7 +155,7 @@ module.exports = {
             await interaction.reply({ content: errorMessage, flags: MessageFlags.Ephemeral });
           }
         } catch (replyError) {
-          console.error('Failed to send button error message to user:', replyError);
+          console.error('[ERREUR] Échec de l\'envoi du message d\'erreur de bouton à l\'utilisateur :', replyError);
         }
       }
     }
@@ -150,10 +176,6 @@ module.exports = {
           await handleRoleGroupCreateSelect(interaction);
         } else if (interaction.customId.startsWith('rolegroup_edit_select_')) {
           await handleRoleGroupEditSelect(interaction);
-        } else if (interaction.customId.startsWith('rolegroup_nameinput_')) {
-          // These are now handled by modal submissions, remove these lines
-        } else if (interaction.customId.startsWith('rolegroup_descinput_')) {
-          // These are now handled by modal submissions, remove these lines
         } else if (interaction.customId.startsWith('pending_delete_')) {
           await handlePendingDelete(interaction);
         } else if (interaction.customId.startsWith('ticket_panel_channel_')) {
@@ -176,8 +198,8 @@ module.exports = {
           await handlePanelDeleteSelect(interaction);
         }
       } catch (error) {
-        console.error('Select menu interaction error:', error);
-        const errorMessage = 'There was an error while processing this selection!';
+        console.error('[ERREUR] Erreur d\'interaction de menu de sélection :', error);
+        const errorMessage = 'Une erreur s\'est produite lors du traitement de cette sélection !';
         
         try {
           if (interaction.replied || interaction.deferred) {
@@ -186,7 +208,7 @@ module.exports = {
             await interaction.reply({ content: errorMessage, flags: MessageFlags.Ephemeral });
           }
         } catch (replyError) {
-          console.error('Failed to send select menu error message to user:', replyError);
+          console.error('[ERREUR] Échec de l\'envoi du message d\'erreur de menu à l\'utilisateur :', replyError);
         }
       }
     }
@@ -200,6 +222,8 @@ module.exports = {
           await handleRoleGroupDescInput(interaction);
         } else if (interaction.customId.startsWith('ticket_panel_setup_')) {
           await handleTicketPanelSetup(interaction);
+        } else if (interaction.customId.startsWith('ticket_rename_modal_')) {
+          await handleTicketRenameModal(interaction);
         } else if (interaction.customId.startsWith('category_create_modal_')) {
           await handleCategoryCreateModal(interaction);
         } else if (interaction.customId.startsWith('category_edit_modal_')) {
@@ -208,8 +232,8 @@ module.exports = {
           await handlePanelCustomizeModal(interaction);
         }
       } catch (error) {
-        console.error('Modal submission error:', error);
-        const errorMessage = 'There was an error while processing this form!';
+        console.error('[ERREUR] Erreur de soumission de modal :', error);
+        const errorMessage = 'Une erreur s\'est produite lors du traitement de ce formulaire !';
         
         try {
           if (interaction.replied || interaction.deferred) {
@@ -218,7 +242,7 @@ module.exports = {
             await interaction.reply({ content: errorMessage, flags: MessageFlags.Ephemeral });
           }
         } catch (replyError) {
-          console.error('Failed to send modal error message to user:', replyError);
+          console.error('[ERREUR] Échec de l\'envoi du message d\'erreur de modal à l\'utilisateur :', replyError);
         }
       }
     }

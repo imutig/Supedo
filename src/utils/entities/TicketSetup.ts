@@ -14,7 +14,7 @@ export class TicketSetup {
   @Column({ name: 'message_id' })
   messageId: string;
 
-  @Column({ name: 'embed_title', default: 'Create a Ticket' })
+  @Column({ name: 'embed_title', default: 'Créer un ticket' })
   embedTitle: string;
 
   @Column({ name: 'embed_description', type: 'text', nullable: true })

@@ -17,7 +17,7 @@ async function cleanupDatabase() {
     console.log('Cleanup completed');
     process.exit(0);
   } catch (error) {
-    console.error('Error during cleanup:', error);
+    console.error('[ERREUR] Erreur lors du nettoyage :', error);
     process.exit(1);
   }
 }

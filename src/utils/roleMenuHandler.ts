@@ -15,9 +15,12 @@ import { RoleRequestDB, RoleGroupDB } from '../utils/database';
 // Handle role request menu
 export async function handleRoleRequest(interaction: any) {
   try {
+    console.log(`🎭 [ROLE REQUEST] Début de la demande de rôle par ${interaction.user.tag} (${interaction.user.id})`);
+    
     const [, , userId] = interaction.customId.split('_');
     
     if (interaction.user.id !== userId) {
+      console.log(`❌ [ROLE REQUEST] Accès refusé - Utilisateur ${interaction.user.tag} tente d'utiliser le bouton d'un autre utilisateur`);
       return interaction.reply({ 
         content: 'Vous n\'êtes pas autorisé à utiliser ce menu !', 
         flags: MessageFlags.Ephemeral 
@@ -25,7 +28,9 @@ export async function handleRoleRequest(interaction: any) {
     }
 
     const guild = interaction.guild;
+    console.log(`🏰 [ROLE REQUEST] Récupération des groupes de rôles pour le serveur ${guild.name} (${guild.id})`);
     const groups = await RoleGroupDB.findByGuild(guild.id);
+    console.log(`📊 [ROLE REQUEST] ${groups.length} groupe(s) de rôles trouvé(s)`);
 
     const embed = new EmbedBuilder()
       .setTitle('👤 Demander un Rôle')
@@ -83,7 +88,9 @@ export async function handleRoleRequest(interaction: any) {
       if (buttonsInRow > 0) {
         components.push(currentRow);
       }
+      console.log(`✅ [ROLE REQUEST] ${groups.length} groupe(s) de rôles ajouté(s) en boutons`);
     } else {
+      console.log(`ℹ️ [ROLE REQUEST] Aucun groupe de rôles disponible`);
       embed.addFields({
         name: '📦 Groupes de Rôles',
         value: 'Aucun groupe de rôles configuré sur ce serveur.',
@@ -91,10 +98,12 @@ export async function handleRoleRequest(interaction: any) {
       });
     }
 
+    console.log(`📤 [ROLE REQUEST] Envoi de la réponse avec ${components.length} composant(s)`);
     await interaction.update({ embeds: [embed], components });
+    console.log(`✅ [ROLE REQUEST] Demande de rôle traitée avec succès pour ${interaction.user.tag}`);
 
   } catch (error) {
-    console.error('Error handling role request:', error);
+    console.error(`💥 [ROLE REQUEST] Erreur lors du traitement de la demande de rôle pour ${interaction.user.tag} :`, error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -105,9 +114,12 @@ export async function handleRoleRequest(interaction: any) {
 // Handle individual role selection
 export async function handleIndividualRole(interaction: any) {
   try {
+    console.log(`🎭 [INDIVIDUAL ROLE] Début de la sélection de rôle individuel par ${interaction.user.tag} (${interaction.user.id})`);
+    
     const [, , userId] = interaction.customId.split('_');
     
     if (interaction.user.id !== userId) {
+      console.log(`❌ [INDIVIDUAL ROLE] Accès refusé - Utilisateur ${interaction.user.tag} tente d'utiliser le bouton d'un autre utilisateur`);
       return interaction.reply({ 
         content: 'Vous n\'êtes pas autorisé à utiliser ce menu !', 
         flags: MessageFlags.Ephemeral 
@@ -115,11 +127,15 @@ export async function handleIndividualRole(interaction: any) {
     }
 
     const guild = interaction.guild;
+    console.log(`🏰 [INDIVIDUAL ROLE] Récupération des rôles pour le serveur ${guild.name} (${guild.id})`);
     const availableRoles = guild.roles.cache
       .filter((role: any) => !role.managed && role.name !== '@everyone')
-      .first(25); // Discord limit for select menu
+      .first(25); // Discord limit
+
+    console.log(`📊 [INDIVIDUAL ROLE] ${availableRoles.length} rôle(s) disponible(s) trouvé(s)`);
 
     if (availableRoles.length === 0) {
+      console.log(`⚠️ [INDIVIDUAL ROLE] Aucun rôle disponible sur le serveur ${guild.name}`);
       return interaction.update({
         content: 'Aucun rôle disponible sur ce serveur.',
         embeds: [],
@@ -127,6 +143,7 @@ export async function handleIndividualRole(interaction: any) {
       });
     }
 
+    console.log(`🎨 [INDIVIDUAL ROLE] Création du menu de sélection avec ${availableRoles.length} option(s)`);
     const selectMenu = new StringSelectMenuBuilder()
       .setCustomId(`role_select_${userId}`)
       .setPlaceholder('Choisissez un rôle à demander')
@@ -151,18 +168,22 @@ export async function handleIndividualRole(interaction: any) {
           .setEmoji('🔙')
       );
 
+    console.log(`📝 [INDIVIDUAL ROLE] Création de l'embed de sélection de rôle`);
+
     const embed = new EmbedBuilder()
       .setTitle('🎭 Sélection de Rôle Individuel')
       .setDescription('Choisissez le rôle que vous souhaitez demander')
       .setColor(0x0099FF);
 
+    console.log(`📤 [INDIVIDUAL ROLE] Envoi de la réponse de sélection de rôle`);
     await interaction.update({ 
       embeds: [embed], 
       components: [actionRow, backRow] 
     });
+    console.log(`✅ [INDIVIDUAL ROLE] Sélection de rôle individuel traitée avec succès pour ${interaction.user.tag}`);
 
   } catch (error) {
-    console.error('Error handling individual role:', error);
+    console.error(`💥 [INDIVIDUAL ROLE] Erreur lors du traitement du rôle individuel pour ${interaction.user.tag} :`, error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -173,9 +194,12 @@ export async function handleIndividualRole(interaction: any) {
 // Handle role group request (request ALL roles in the group)
 export async function handleRoleGroupRequest(interaction: any) {
   try {
+    console.log(`👥 [ROLE GROUP] Début de la demande de groupe de rôles par ${interaction.user.tag} (${interaction.user.id})`);
+    
     const [, , userId, groupId] = interaction.customId.split('_');
     
     if (interaction.user.id !== userId) {
+      console.log(`❌ [ROLE GROUP] Accès refusé - Utilisateur ${interaction.user.tag} tente d'utiliser le bouton d'un autre utilisateur`);
       return interaction.reply({ 
         content: 'Vous n\'êtes pas autorisé à utiliser ce menu !', 
         flags: MessageFlags.Ephemeral 
@@ -184,32 +208,44 @@ export async function handleRoleGroupRequest(interaction: any) {
 
     const guild = interaction.guild;
     const member = interaction.member;
+    console.log(`🔍 [ROLE GROUP] Recherche du groupe ID ${groupId} sur le serveur ${guild.name}`);
     const group = await RoleGroupDB.findByName(guild.id, '') || await RoleGroupDB.findByGuild(guild.id).then(groups => groups.find(g => g.id.toString() === groupId));
 
     if (!group) {
+      console.log(`❌ [ROLE GROUP] Groupe ID ${groupId} introuvable`);
       return interaction.update({
         content: 'Groupe de rôles introuvable.',
         embeds: [],
         components: []
       });
     }
+    
+    console.log(`✅ [ROLE GROUP] Groupe trouvé : "${group.groupName}" avec ${group.rolesConfig.length} rôle(s)`);
 
     // Check which roles the user doesn't have yet
     const rolesToRequest = [];
     const alreadyHave = [];
     
+    console.log(`🔍 [ROLE GROUP] Vérification des rôles existants pour ${interaction.user.tag}`);
     for (const roleConfig of group.rolesConfig) {
       const role = guild.roles.cache.get(roleConfig.id);
       if (role) {
         if (member.roles.cache.has(role.id)) {
           alreadyHave.push(role.name);
+          console.log(`✓ [ROLE GROUP] Utilisateur possède déjà le rôle : ${role.name}`);
         } else {
           rolesToRequest.push(roleConfig);
+          console.log(`+ [ROLE GROUP] Rôle à demander : ${role.name}`);
         }
+      } else {
+        console.log(`⚠️ [ROLE GROUP] Rôle ${roleConfig.id} (${roleConfig.name}) introuvable sur le serveur`);
       }
     }
 
+    console.log(`📊 [ROLE GROUP] Résumé - Déjà possédés: ${alreadyHave.length}, À demander: ${rolesToRequest.length}`);
+
     if (rolesToRequest.length === 0) {
+      console.log(`ℹ️ [ROLE GROUP] ${interaction.user.tag} possède déjà tous les rôles du groupe ${group.groupName}`);
       return interaction.update({
         content: `Vous possédez déjà tous les rôles du groupe **${group.groupName}** !`,
         embeds: [],
@@ -217,6 +253,7 @@ export async function handleRoleGroupRequest(interaction: any) {
       });
     }
 
+    console.log(`📝 [ROLE GROUP] Création de l'embed de demande de groupe pour ${rolesToRequest.length} rôle(s)`);
     // Create role request for ALL roles in the group
     const requestEmbed = new EmbedBuilder()
       .setTitle('Demande de Groupe de Rôles')
@@ -275,7 +312,7 @@ export async function handleRoleGroupRequest(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling role group request:', error);
+    console.error('[ERREUR] Erreur lors du traitement de la demande de groupe de rôles :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -350,9 +387,12 @@ export async function handleRoleBack(interaction: any) {
 // Handle individual role selection from select menu
 export async function handleIndividualRoleSelection(interaction: any) {
   try {
+    console.log(`🎯 [ROLE SELECTION] Début de la sélection de rôle individuel par ${interaction.user.tag}`);
+    
     const [, , userId] = interaction.customId.split('_');
     
     if (interaction.user.id !== userId) {
+      console.log(`❌ [ROLE SELECTION] Accès refusé - Utilisateur ${interaction.user.tag} tente d'utiliser le menu d'un autre utilisateur`);
       return interaction.reply({ 
         content: 'Vous n\'êtes pas autorisé à utiliser ce menu !', 
         flags: MessageFlags.Ephemeral 
@@ -362,9 +402,11 @@ export async function handleIndividualRoleSelection(interaction: any) {
     const selectedRoleId = interaction.values[0];
     const guild = interaction.guild;
     const member = interaction.member;
+    console.log(`🔍 [ROLE SELECTION] Recherche du rôle ID ${selectedRoleId} sur le serveur ${guild.name}`);
     const role = guild.roles.cache.get(selectedRoleId);
 
     if (!role) {
+      console.log(`❌ [ROLE SELECTION] Rôle ID ${selectedRoleId} introuvable`);
       return interaction.update({
         content: 'Le rôle sélectionné n\'existe plus !',
         embeds: [],
@@ -372,14 +414,19 @@ export async function handleIndividualRoleSelection(interaction: any) {
       });
     }
 
+    console.log(`✅ [ROLE SELECTION] Rôle trouvé : "${role.name}" (${role.id})`);
+
     // Check if user already has the role
     if (member.roles.cache.has(role.id)) {
+      console.log(`⚠️ [ROLE SELECTION] ${interaction.user.tag} possède déjà le rôle ${role.name}`);
       return interaction.update({
         content: `Vous avez déjà le rôle **${role.name}** !`,
         embeds: [],
         components: []
       });
     }
+
+    console.log(`📝 [ROLE SELECTION] Vérification des demandes existantes pour ${interaction.user.tag} et le rôle ${role.name}`);
 
     // Check if user already has a pending request for this role
     const existingRequest = await RoleRequestDB.findByUserAndRole(member.user.id, role.id);
@@ -439,7 +486,7 @@ export async function handleIndividualRoleSelection(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling individual role selection:', error);
+    console.error('[ERREUR] Erreur lors du traitement de la sélection de rôle individuel :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -507,7 +554,7 @@ export async function handleRoleRemove(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling role remove:', error);
+    console.error('[ERREUR] Erreur lors du traitement de la suppression de rôle :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -555,7 +602,7 @@ export async function handleRoleList(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling role list:', error);
+    console.error('[ERREUR] Erreur lors du traitement de la liste des rôles :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -631,7 +678,7 @@ export async function handleRoleGroupManage(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling rolegroup manage:', error);
+    console.error('[ERREUR] Erreur lors du traitement de la gestion des groupes de rôles :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -661,39 +708,114 @@ export async function handleRoleRemoveSelect(interaction: any) {
       });
     }
 
+    // Check if user actually has this role
+    if (!interaction.member.roles.cache.has(roleId)) {
+      return interaction.reply({
+        content: 'Vous ne possédez pas ce rôle.',
+        flags: MessageFlags.Ephemeral
+      });
+    }
+
+    // Check if there's already a pending removal request for this role
+    const existingRequest = await RoleRequestDB.findPendingByUserRoleAndType(userId, roleId, 'remove');
+    if (existingRequest) {
+      return interaction.reply({
+        content: `Vous avez déjà une demande de retrait en attente pour le rôle **${role.name}**.`,
+        flags: MessageFlags.Ephemeral
+      });
+    }
+
     try {
-      await interaction.member.roles.remove(role);
+      // Create removal request
+      const request = await RoleRequestDB.create({
+        userId: userId,
+        roleId: roleId,
+        guildId: interaction.guild.id,
+        requestType: 'remove',
+        status: 'pending'
+      });
+
+      // Find a channel to send the removal request (try to find an admin channel)
+      let targetChannel = interaction.guild.channels.cache.find((c: any) => 
+        c.name.includes('admin') || c.name.includes('staff') || c.name.includes('mod')
+      );
       
-      const embed = new EmbedBuilder()
-        .setTitle('✅ Rôle Retiré')
-        .setDescription(`Le rôle **${role.name}** a été retiré avec succès !`)
-        .setColor(0x00FF00)
+      // Fallback to system channel or first text channel
+      if (!targetChannel) {
+        targetChannel = interaction.guild.systemChannel || 
+                       interaction.guild.channels.cache.find((c: any) => c.type === 0);
+      }
+
+      if (targetChannel) {
+        const requestEmbed = new EmbedBuilder()
+          .setTitle('🔴 Demande de retrait de rôle')
+          .setDescription(`**${interaction.user.tag}** souhaite retirer le rôle **${role.name}**.`)
+          .addFields(
+            { name: 'Utilisateur', value: `<@${userId}>`, inline: true },
+            { name: 'Rôle', value: `<@&${roleId}>`, inline: true },
+            { name: 'Type', value: 'Retrait', inline: true },
+            { name: 'Date', value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: false }
+          )
+          .setColor(0xFF6B6B)
+          .setTimestamp();
+
+        const approvalButtons = new ActionRowBuilder<ButtonBuilder>()
+          .addComponents(
+            new ButtonBuilder()
+              .setCustomId(`approve_removal_${userId}_${roleId}`)
+              .setLabel('Approuver le retrait')
+              .setStyle(ButtonStyle.Danger)
+              .setEmoji('✅'),
+            new ButtonBuilder()
+              .setCustomId(`deny_removal_${userId}_${roleId}`)
+              .setLabel('Refuser')
+              .setStyle(ButtonStyle.Secondary)
+              .setEmoji('❌')
+          );
+
+        const requestMessage = await targetChannel.send({
+          embeds: [requestEmbed],
+          components: [approvalButtons]
+        });
+
+        // Update request with message ID
+        await RoleRequestDB.updateMessageId(request.id, requestMessage.id);
+      }
+
+      const confirmEmbed = new EmbedBuilder()
+        .setTitle('📨 Demande de retrait envoyée')
+        .setDescription(`Votre demande de retrait pour le rôle **${role.name}** a été envoyée aux administrateurs.`)
+        .addFields(
+          { name: 'Statut', value: 'En attente d\'approbation', inline: true },
+          { name: 'Rôle', value: `<@&${roleId}>`, inline: true }
+        )
+        .setColor(0xFFB347)
         .setTimestamp();
 
       const backRow = new ActionRowBuilder<ButtonBuilder>()
         .addComponents(
           new ButtonBuilder()
             .setCustomId(`role_back_${userId}`)
-            .setLabel('Retour au Menu')
+            .setLabel('Retour au menu')
             .setStyle(ButtonStyle.Secondary)
             .setEmoji('🔙')
         );
 
       await interaction.update({ 
-        embeds: [embed], 
+        embeds: [confirmEmbed], 
         components: [backRow] 
       });
 
-    } catch (roleError) {
-      console.error('Error removing role:', roleError);
+    } catch (dbError) {
+      console.error('[ERREUR] Erreur lors de la création de la demande de suppression :', dbError);
       await interaction.reply({
-        content: 'Erreur lors du retrait du rôle. Vérifiez mes permissions.',
+        content: 'Erreur lors de la création de la demande de retrait.',
         flags: MessageFlags.Ephemeral
       });
     }
 
   } catch (error) {
-    console.error('Error handling role remove select:', error);
+    console.error('Erreur lors du traitement de la demande de retrait :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -728,7 +850,7 @@ export async function handleRoleGroupCreate(interaction: any) {
 
     if (availableRoles.length === 0) {
       const embed = new EmbedBuilder()
-        .setTitle('➕ Création de Groupe de Rôles')
+        .setTitle('➕ Création de groupe de rôles')
         .setDescription('Aucun rôle disponible pour créer un groupe.')
         .setColor(0xFF4444);
 
@@ -785,7 +907,7 @@ export async function handleRoleGroupCreate(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling rolegroup create:', error);
+    console.error('Erreur lors de la création du groupe de rôles :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -808,7 +930,7 @@ export async function handleRoleGroupList(interaction: any) {
     const roleGroups = await RoleGroupDB.findByGuild(interaction.guild.id);
 
     const embed = new EmbedBuilder()
-      .setTitle('📋 Groupes de Rôles')
+      .setTitle('📋 Groupes de rôles')
       .setColor(0x0099FF);
 
     if (roleGroups.length === 0) {
@@ -837,7 +959,7 @@ export async function handleRoleGroupList(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling rolegroup list:', error);
+    console.error('[ERREUR] Erreur lors du traitement de la liste des groupes de rôles :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -869,7 +991,7 @@ export async function handleRoleGroupDelete(interaction: any) {
 
     if (roleGroups.length === 0) {
       const embed = new EmbedBuilder()
-        .setTitle('🗑️ Suppression de Groupe')
+        .setTitle('🗑️ Suppression de groupe')
         .setDescription('Aucun groupe de rôles à supprimer.')
         .setColor(0xFF4444);
 
@@ -912,7 +1034,7 @@ export async function handleRoleGroupDelete(interaction: any) {
       );
 
     const embed = new EmbedBuilder()
-      .setTitle('🗑️ Suppression de Groupe')
+      .setTitle('🗑️ Suppression de groupe')
       .setDescription('Sélectionnez le groupe de rôles à supprimer :')
       .setColor(0xFF4444);
 
@@ -922,7 +1044,7 @@ export async function handleRoleGroupDelete(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling rolegroup delete:', error);
+    console.error('Erreur lors de la suppression du groupe de rôles :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -959,7 +1081,7 @@ export async function handleRoleGroupDeleteSelect(interaction: any) {
       await RoleGroupDB.delete(roleGroup.id);
       
       const embed = new EmbedBuilder()
-        .setTitle('✅ Groupe Supprimé')
+        .setTitle('✅ Groupe supprimé')
         .setDescription(`Le groupe **${roleGroup.groupName}** a été supprimé avec succès !`)
         .setColor(0x00FF00)
         .setTimestamp();
@@ -968,7 +1090,7 @@ export async function handleRoleGroupDeleteSelect(interaction: any) {
         .addComponents(
           new ButtonBuilder()
             .setCustomId(`rolegroup_manage_${userId}`)
-            .setLabel('Retour au Menu')
+            .setLabel('Retour au menu')
             .setStyle(ButtonStyle.Secondary)
             .setEmoji('🔙')
         );
@@ -979,7 +1101,7 @@ export async function handleRoleGroupDeleteSelect(interaction: any) {
       });
 
     } catch (dbError) {
-      console.error('Error deleting rolegroup:', dbError);
+      console.error('Erreur lors de la suppression du groupe de rôles :', dbError);
       await interaction.reply({
         content: 'Erreur lors de la suppression du groupe.',
         flags: MessageFlags.Ephemeral
@@ -987,7 +1109,7 @@ export async function handleRoleGroupDeleteSelect(interaction: any) {
     }
 
   } catch (error) {
-    console.error('Error handling rolegroup delete select:', error);
+    console.error('Erreur lors du traitement de la sélection de suppression du groupe de rôles :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -1023,7 +1145,7 @@ export async function handleRoleGroupCreateSelect(interaction: any) {
     await createRoleGroupWithRoles(interaction, selectedRoleIds, groupName, 'Groupe créé via le menu');
 
   } catch (error) {
-    console.error('Error handling rolegroup create select:', error);
+    console.error('[ERREUR] Erreur lors du traitement de la sélection de création de groupe de rôles :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -1054,7 +1176,7 @@ async function createRoleGroupWithRoles(interaction: any, roleIds: string[], gro
     });
 
     const embed = new EmbedBuilder()
-      .setTitle('✅ Groupe Créé')
+      .setTitle('✅ Groupe créé')
       .setDescription(`Le groupe **${groupName}** a été créé avec succès !`)
       .addFields(
         { name: 'Rôles inclus', value: rolesConfig.map(r => r.name).join(', '), inline: false },
@@ -1067,7 +1189,7 @@ async function createRoleGroupWithRoles(interaction: any, roleIds: string[], gro
       .addComponents(
         new ButtonBuilder()
           .setCustomId(`rolegroup_manage_${interaction.user.id}`)
-          .setLabel('Retour au Menu')
+          .setLabel('Retour au menu')
           .setStyle(ButtonStyle.Secondary)
           .setEmoji('🔙')
       );
@@ -1078,7 +1200,7 @@ async function createRoleGroupWithRoles(interaction: any, roleIds: string[], gro
     });
 
   } catch (dbError) {
-    console.error('Error creating role group:', dbError);
+    console.error('[ERREUR] Erreur lors de la création du groupe de rôles :', dbError);
     await interaction.reply({
       content: 'Erreur lors de la création du groupe. Vérifiez que le nom n\'existe pas déjà.',
       flags: MessageFlags.Ephemeral
@@ -1109,7 +1231,7 @@ export async function handleRolePending(interaction: any) {
     const pendingRequests = await RoleRequestDB.findPendingByGuild(interaction.guild.id);
 
     const embed = new EmbedBuilder()
-      .setTitle('⏳ Demandes en Attente')
+      .setTitle('⏳ Demandes en attente')
       .setColor(0xFFAA00);
 
     if (pendingRequests.length === 0) {
@@ -1147,12 +1269,22 @@ export async function handleRolePending(interaction: any) {
       if (rowCounter >= maxDisplayed) break;
       
       const user = `<@${userId}>`;
-      const roles = userRequests.map((req: any) => `<@&${req.roleId}>`).join(', ');
+      const addRequests = userRequests.filter((req: any) => req.requestType === 'add' || !req.requestType);
+      const removeRequests = userRequests.filter((req: any) => req.requestType === 'remove');
       const date = new Date(userRequests[0].createdAt).toLocaleDateString('fr-FR');
-      const requestCount = userRequests.length;
       
-      description += `**${user}** (${requestCount} rôle${requestCount > 1 ? 's' : ''})\n`;
-      description += `└ ${roles}\n`;
+      description += `**${user}**\n`;
+      
+      if (addRequests.length > 0) {
+        const addRoles = addRequests.map((req: any) => `<@&${req.roleId}>`).join(', ');
+        description += `└ ➕ **Ajout:** ${addRoles}\n`;
+      }
+      
+      if (removeRequests.length > 0) {
+        const removeRoles = removeRequests.map((req: any) => `<@&${req.roleId}>`).join(', ');
+        description += `└ ➖ **Retrait:** ${removeRoles}\n`;
+      }
+      
       description += `└ 📅 ${date}\n\n`;
       rowCounter++;
     }
@@ -1217,7 +1349,7 @@ export async function handleRolePending(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling role pending:', error);
+    console.error('[ERREUR] Erreur lors du traitement des rôles en attente :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -1249,7 +1381,7 @@ export async function handleRoleGroupEdit(interaction: any) {
 
     if (roleGroups.length === 0) {
       const embed = new EmbedBuilder()
-        .setTitle('✏️ Modification de Groupe')
+        .setTitle('✏️ Modification de groupe')
         .setDescription('Aucun groupe de rôles à modifier.')
         .setColor(0xFF4444);
 
@@ -1292,7 +1424,7 @@ export async function handleRoleGroupEdit(interaction: any) {
       );
 
     const embed = new EmbedBuilder()
-      .setTitle('✏️ Modification de Groupe')
+      .setTitle('✏️ Modification de groupe')
       .setDescription('Sélectionnez le groupe de rôles à modifier :')
       .setColor(0x00AAFF);
 
@@ -1302,7 +1434,7 @@ export async function handleRoleGroupEdit(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling rolegroup edit:', error);
+    console.error('Erreur lors du traitement de la modification du groupe de rôles :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -1336,7 +1468,7 @@ export async function handleRoleGroupEditSelect(interaction: any) {
     }
 
     const embed = new EmbedBuilder()
-      .setTitle('✏️ Modification de Groupe')
+      .setTitle('✏️ Modification de groupe')
       .setDescription(`**Groupe sélectionné:** ${roleGroup.groupName}\n\nQue souhaitez-vous modifier ?`)
       .addFields(
         { name: 'Nom actuel', value: roleGroup.groupName, inline: true },
@@ -1374,7 +1506,7 @@ export async function handleRoleGroupEditSelect(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling rolegroup edit select:', error);
+    console.error('Erreur lors du traitement de la modification du groupe de rôles :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -1413,7 +1545,7 @@ export async function handleRoleGroupEditName(interaction: any) {
     await interaction.showModal(modal);
 
   } catch (error) {
-    console.error('Error handling rolegroup edit name:', error);
+    console.error('Erreur lors du traitement de la modification du nom du groupe de rôles :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -1452,7 +1584,7 @@ export async function handleRoleGroupEditDesc(interaction: any) {
     await interaction.showModal(modal);
 
   } catch (error) {
-    console.error('Error handling rolegroup edit desc:', error);
+    console.error('[ERREUR] Erreur lors du traitement de la modification de description du groupe de rôles :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -1497,7 +1629,7 @@ export async function handleRoleGroupNameInput(interaction: any) {
       await RoleGroupDB.update(actualGroupId, { groupName: newName });
       
       const embed = new EmbedBuilder()
-        .setTitle('✅ Nom Modifié')
+        .setTitle('✅ Nom modifié')
         .setDescription(`Le groupe a été renommé en **${newName}** avec succès !`)
         .addFields(
           { name: 'Ancien nom', value: roleGroup.groupName, inline: true },
@@ -1510,7 +1642,7 @@ export async function handleRoleGroupNameInput(interaction: any) {
         .addComponents(
           new ButtonBuilder()
             .setCustomId(`rolegroup_manage_${userId}`)
-            .setLabel('Retour au Menu')
+            .setLabel('Retour au menu')
             .setStyle(ButtonStyle.Secondary)
             .setEmoji('🔙')
         );
@@ -1522,7 +1654,7 @@ export async function handleRoleGroupNameInput(interaction: any) {
       });
 
     } catch (dbError) {
-      console.error('Error updating rolegroup name:', dbError);
+      console.error('Erreur lors de la modification du nom du groupe de rôles :', dbError);
       await interaction.reply({
         content: 'Erreur lors de la modification du nom. Ce nom existe peut-être déjà.',
         flags: MessageFlags.Ephemeral
@@ -1530,7 +1662,7 @@ export async function handleRoleGroupNameInput(interaction: any) {
     }
 
   } catch (error) {
-    console.error('Error handling rolegroup name input:', error);
+    console.error('Erreur lors du traitement de la modification du nom du groupe de rôles :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -1570,7 +1702,7 @@ export async function handleRoleGroupDescInput(interaction: any) {
       await RoleGroupDB.update(actualGroupId, { description: finalDesc });
       
       const embed = new EmbedBuilder()
-        .setTitle('✅ Description Modifiée')
+        .setTitle('✅ Description modifiée')
         .setDescription(`La description du groupe **${roleGroup.groupName}** a été mise à jour !`)
         .addFields(
           { name: 'Ancienne description', value: roleGroup.description || 'Aucune', inline: false },
@@ -1583,7 +1715,7 @@ export async function handleRoleGroupDescInput(interaction: any) {
         .addComponents(
           new ButtonBuilder()
             .setCustomId(`rolegroup_manage_${userId}`)
-            .setLabel('Retour au Menu')
+            .setLabel('Retour au menu')
             .setStyle(ButtonStyle.Secondary)
             .setEmoji('🔙')
         );
@@ -1595,7 +1727,7 @@ export async function handleRoleGroupDescInput(interaction: any) {
       });
 
     } catch (dbError) {
-      console.error('Error updating rolegroup description:', dbError);
+      console.error('Erreur lors de la modification de la description du groupe de rôles :', dbError);
       await interaction.reply({
         content: 'Erreur lors de la modification de la description.',
         flags: MessageFlags.Ephemeral
@@ -1603,7 +1735,7 @@ export async function handleRoleGroupDescInput(interaction: any) {
     }
 
   } catch (error) {
-    console.error('Error handling rolegroup desc input:', error);
+    console.error('Erreur lors du traitement de la modification de la description du groupe de rôles :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -1673,10 +1805,10 @@ export async function handleGroupApproval(interaction: any) {
 
     // Create success embed
     const embed = new EmbedBuilder()
-      .setTitle('✅ Demande de Groupe Approuvée')
+      .setTitle('✅ Demande de groupe approuvée')
       .setDescription(`La demande de groupe **${roleGroup.groupName}** de ${member} a été approuvée !`)
       .addFields(
-        { name: 'Rôles Assignés', value: assignedRoles.length > 0 ? assignedRoles.join(', ') : 'Aucun', inline: false },
+        { name: 'Rôles assignés', value: assignedRoles.length > 0 ? assignedRoles.join(', ') : 'Aucun', inline: false },
         { name: 'Approuvé par', value: `<@${interaction.user.id}>`, inline: true },
         { name: 'Date', value: new Date().toLocaleString('fr-FR'), inline: true }
       )
@@ -1687,25 +1819,10 @@ export async function handleGroupApproval(interaction: any) {
       embed.addFields({ name: '⚠️ Rôles non assignés', value: failedRoles.join(', '), inline: false });
     }
 
-    // Notify the user
-    try {
-      await member.send({
-        embeds: [new EmbedBuilder()
-          .setTitle('✅ Demande de Groupe Approuvée')
-          .setDescription(`Votre demande pour le groupe **${roleGroup.groupName}** a été approuvée !`)
-          .addFields({ name: 'Rôles reçus', value: assignedRoles.join(', ') || 'Aucun' })
-          .setColor(0x00FF00)
-          .setTimestamp()
-        ]
-      });
-    } catch (dmError: any) {
-      console.log('Could not send DM to user:', dmError.message);
-    }
-
     await interaction.update({ embeds: [embed], components: [] });
 
   } catch (error) {
-    console.error('Error handling group approval:', error);
+    console.error('Erreur lors du traitement de l\'approbation du groupe :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue lors de l\'approbation.', 
       flags: MessageFlags.Ephemeral 
@@ -1758,7 +1875,7 @@ export async function handleGroupDenial(interaction: any) {
 
     // Create denial embed
     const embed = new EmbedBuilder()
-      .setTitle('❌ Demande de Groupe Refusée')
+      .setTitle('❌ Demande de groupe refusée')
       .setDescription(`La demande de groupe **${roleGroup.groupName}** de ${member} a été refusée.`)
       .addFields(
         { name: 'Refusé par', value: `<@${interaction.user.id}>`, inline: true },
@@ -1768,24 +1885,10 @@ export async function handleGroupDenial(interaction: any) {
       .setColor(0xFF0000)
       .setTimestamp();
 
-    // Notify the user
-    try {
-      await member.send({
-        embeds: [new EmbedBuilder()
-          .setTitle('❌ Demande de Groupe Refusée')
-          .setDescription(`Votre demande pour le groupe **${roleGroup.groupName}** a été refusée.`)
-          .setColor(0xFF0000)
-          .setTimestamp()
-        ]
-      });
-    } catch (dmError: any) {
-      console.log('Could not send DM to user:', dmError.message);
-    }
-
     await interaction.update({ embeds: [embed], components: [] });
 
   } catch (error) {
-    console.error('Error handling group denial:', error);
+    console.error('Erreur lors du traitement du refus du groupe :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue lors du refus.', 
       flags: MessageFlags.Ephemeral 
@@ -1827,7 +1930,7 @@ export async function handlePendingDelete(interaction: any) {
           await message.delete();
         }
       } catch (messageError) {
-        console.log('Could not delete original message:', messageError);
+        console.log('Erreur lors de la suppression du message original :', messageError);
         // Continue with database deletion even if message deletion fails
       }
     }
@@ -1835,7 +1938,7 @@ export async function handlePendingDelete(interaction: any) {
     await RoleRequestDB.delete(requestId);
 
     const embed = new EmbedBuilder()
-      .setTitle('✅ Demande Supprimée')
+      .setTitle('✅ Demande supprimée')
       .setDescription('La demande sélectionnée a été supprimée avec succès.')
       .setColor(0x00FF00)
       .setTimestamp();
@@ -1844,12 +1947,12 @@ export async function handlePendingDelete(interaction: any) {
       .addComponents(
         new ButtonBuilder()
           .setCustomId(`role_pending_${userId}`)
-          .setLabel('Retour aux Demandes')
+          .setLabel('Retour aux demandes')
           .setStyle(ButtonStyle.Primary)
           .setEmoji('⏳'),
         new ButtonBuilder()
           .setCustomId(`role_back_${userId}`)
-          .setLabel('Menu Principal')
+          .setLabel('Menu principal')
           .setStyle(ButtonStyle.Secondary)
           .setEmoji('🔙')
       );
@@ -1860,7 +1963,7 @@ export async function handlePendingDelete(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling pending delete:', error);
+    console.error('Erreur lors du traitement de la suppression en attente :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue lors de la suppression.', 
       flags: MessageFlags.Ephemeral 
@@ -1910,8 +2013,8 @@ export async function handlePendingClear(interaction: any) {
             messagesDeleted.add(request.messageId);
           }
         } catch (messageError) {
-          console.log('Could not delete message:', messageError);
-          // Continue with database deletion even if message deletion fails
+          console.log('Erreur lors de la suppression du message :', messageError);
+          // Continuer avec la suppression de la base de données même si la suppression du message échoue
         }
       }
       
@@ -1919,7 +2022,7 @@ export async function handlePendingClear(interaction: any) {
     }
 
     const embed = new EmbedBuilder()
-      .setTitle('🗑️ Liste Vidée')
+      .setTitle('🗑️ Liste vidée')
       .setDescription(`${pendingRequests.length} demande${pendingRequests.length > 1 ? 's' : ''} en attente supprimée${pendingRequests.length > 1 ? 's' : ''}.`)
       .setColor(0xFF6B6B)
       .setTimestamp();
@@ -1928,12 +2031,12 @@ export async function handlePendingClear(interaction: any) {
       .addComponents(
         new ButtonBuilder()
           .setCustomId(`role_pending_${userId}`)
-          .setLabel('Voir les Demandes')
+          .setLabel('Voir les demandes')
           .setStyle(ButtonStyle.Primary)
           .setEmoji('⏳'),
         new ButtonBuilder()
           .setCustomId(`role_back_${userId}`)
-          .setLabel('Menu Principal')
+          .setLabel('Menu principal')
           .setStyle(ButtonStyle.Secondary)
           .setEmoji('🔙')
       );
@@ -1944,10 +2047,10 @@ export async function handlePendingClear(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling pending clear:', error);
-    await interaction.reply({ 
-      content: 'Une erreur est survenue lors du vidage.', 
-      flags: MessageFlags.Ephemeral 
+    console.error('Erreur lors du traitement de la suppression en attente :', error);
+    await interaction.reply({
+      content: 'Une erreur est survenue lors du vidage.',
+      flags: MessageFlags.Ephemeral
     });
   }
 }
@@ -1968,10 +2071,104 @@ export async function handlePendingRefresh(interaction: any) {
     await handleRolePending(interaction);
 
   } catch (error) {
-    console.error('Error handling pending refresh:', error);
-    await interaction.reply({ 
-      content: 'Une erreur est survenue lors de l\'actualisation.', 
-      flags: MessageFlags.Ephemeral 
+    console.error('Erreur lors du traitement de l\'actualisation en attente :', error);
+    await interaction.reply({
+      content: 'Une erreur est survenue lors de l\'actualisation.',
+      flags: MessageFlags.Ephemeral
     });
+  }
+}
+
+// Handle approval of role removal requests
+export async function handleApproveRemoval(interaction: any) {
+  const [, , userId, roleId] = interaction.customId.split('_');
+  
+  // Check if user has permission to manage roles
+  if (!interaction.member.permissions.has(PermissionFlagsBits.ManageRoles)) {
+    return interaction.reply({ content: 'Vous n\'avez pas la permission de gérer les demandes de rôles !', flags: MessageFlags.Ephemeral });
+  }
+
+  const request = await RoleRequestDB.findPendingByUserRoleAndType(userId, roleId, 'remove');
+  
+  if (!request) {
+    return interaction.reply({ content: 'Cette demande de retrait n\'existe plus !', flags: MessageFlags.Ephemeral });
+  }
+
+  const guild = interaction.guild;
+  const member = await guild.members.fetch(userId);
+  const role = await guild.roles.fetch(roleId);
+
+  if (!member || !role) {
+    return interaction.reply({ content: 'Membre ou rôle introuvable !', flags: MessageFlags.Ephemeral });
+  }
+
+  try {
+    await member.roles.remove(role);
+    
+    // Update request status
+    await RoleRequestDB.updateStatus(request.id, 'approved', interaction.user.id);
+
+    const embed = new EmbedBuilder()
+      .setTitle('Demande de retrait approuvée')
+      .setDescription(`Le rôle **${role.name}** a été retiré de ${member.user.tag}.`)
+      .setColor(0x00FF00)
+      .addFields(
+        { name: 'Approuvé par', value: `<@${interaction.user.id}>`, inline: true },
+        { name: 'Utilisateur', value: `<@${member.user.id}>`, inline: true },
+        { name: 'Rôle', value: `<@&${role.id}>`, inline: true }
+      )
+      .setTimestamp();
+
+    await interaction.update({ embeds: [embed], components: [] });
+
+  } catch (error) {
+    console.error('Erreur lors du retrait du rôle :', error);
+    await interaction.reply({ content: 'Erreur lors du retrait du rôle !', flags: MessageFlags.Ephemeral });
+  }
+}
+
+// Handle denial of role removal requests
+export async function handleDenyRemoval(interaction: any) {
+  const [, , userId, roleId] = interaction.customId.split('_');
+  
+  // Check if user has permission to manage roles
+  if (!interaction.member.permissions.has(PermissionFlagsBits.ManageRoles)) {
+    return interaction.reply({ content: 'Vous n\'avez pas la permission de gérer les demandes de rôles !', flags: MessageFlags.Ephemeral });
+  }
+
+  const request = await RoleRequestDB.findPendingByUserRoleAndType(userId, roleId, 'remove');
+  
+  if (!request) {
+    return interaction.reply({ content: 'Cette demande de retrait n\'existe plus !', flags: MessageFlags.Ephemeral });
+  }
+
+  const guild = interaction.guild;
+  const member = await guild.members.fetch(userId);
+  const role = await guild.roles.fetch(roleId);
+
+  if (!member || !role) {
+    return interaction.reply({ content: 'Membre ou rôle introuvable !', flags: MessageFlags.Ephemeral });
+  }
+
+  try {
+    // Update request status
+    await RoleRequestDB.updateStatus(request.id, 'denied', interaction.user.id);
+
+    const embed = new EmbedBuilder()
+      .setTitle('Demande de retrait refusée')
+      .setDescription(`La demande de retrait du rôle **${role.name}** pour ${member.user.tag} a été refusée.`)
+      .setColor(0xFF0000)
+      .addFields(
+        { name: 'Refusé par', value: `<@${interaction.user.id}>`, inline: true },
+        { name: 'Utilisateur', value: `<@${member.user.id}>`, inline: true },
+        { name: 'Rôle', value: `<@&${role.id}>`, inline: true }
+      )
+      .setTimestamp();
+
+    await interaction.update({ embeds: [embed], components: [] });
+
+  } catch (error) {
+    console.error('Erreur lors du refus de la demande :', error);
+    await interaction.reply({ content: 'Erreur lors du refus de la demande !', flags: MessageFlags.Ephemeral });
   }
 }

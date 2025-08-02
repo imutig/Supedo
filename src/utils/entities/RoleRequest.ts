@@ -14,6 +14,14 @@ export class RoleRequest {
   @Column({ name: 'guild_id' })
   guildId: string;
 
+  @Column({
+    name: 'request_type',
+    type: 'enum',
+    enum: ['add', 'remove'],
+    default: 'add'
+  })
+  requestType: 'add' | 'remove';
+
   @Column({ name: 'message_id', nullable: true })
   messageId?: string;
 

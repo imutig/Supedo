@@ -33,6 +33,8 @@ export class RoleRequestDB {
     roleId: string;
     guildId: string;
     messageId?: string;
+    requestType?: 'add' | 'remove';
+    status?: 'pending' | 'approved' | 'denied';
   }): Promise<RoleRequest> {
     const roleRequest = roleRequestRepository.create(data);
     return await roleRequestRepository.save(roleRequest);
@@ -41,6 +43,24 @@ export class RoleRequestDB {
   static async findByUserAndRole(userId: string, roleId: string): Promise<RoleRequest | null> {
     return await roleRequestRepository.findOne({
       where: { userId, roleId }
+    });
+  }
+
+  static async findPendingByUserAndRole(userId: string, roleId: string): Promise<RoleRequest | null> {
+    return await roleRequestRepository.findOne({
+      where: { userId, roleId, status: 'pending' }
+    });
+  }
+
+  static async findByUserRoleAndType(userId: string, roleId: string, requestType: 'add' | 'remove'): Promise<RoleRequest | null> {
+    return await roleRequestRepository.findOne({
+      where: { userId, roleId, requestType }
+    });
+  }
+
+  static async findPendingByUserRoleAndType(userId: string, roleId: string, requestType: 'add' | 'remove'): Promise<RoleRequest | null> {
+    return await roleRequestRepository.findOne({
+      where: { userId, roleId, requestType, status: 'pending' }
     });
   }
 
@@ -70,6 +90,12 @@ export class RoleRequestDB {
     });
   }
 
+  static async findByGuild(guildId: string): Promise<RoleRequest[]> {
+    return await roleRequestRepository.find({
+      where: { guildId }
+    });
+  }
+
   static async delete(id: number): Promise<void> {
     await roleRequestRepository.delete(id);
   }
@@ -88,8 +114,8 @@ export class TicketSetupDB {
   }): Promise<TicketSetup> {
     const ticketSetup = ticketSetupRepository.create({
       ...data,
-      embedTitle: data.embedTitle || 'Create a Ticket',
-      embedDescription: data.embedDescription || 'Click the button below to create a support ticket.',
+      embedTitle: data.embedTitle || 'Créer un ticket',
+      embedDescription: data.embedDescription || 'Cliquez sur le bouton ci-dessous pour créer un ticket de support.',
       embedColor: data.embedColor || '#0099FF'
     });
     return await ticketSetupRepository.save(ticketSetup);

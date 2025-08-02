@@ -15,8 +15,12 @@ module.exports = {
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 
   async execute(interaction: any) {
+    console.log(`🎫 [TICKET COMMAND] Commande /ticket exécutée par ${interaction.user.tag} (${interaction.user.id})`);
+    console.log(`🏰 [TICKET COMMAND] Serveur: ${interaction.guild.name} (${interaction.guild.id})`);
+    
     const member = interaction.member;
     
+    console.log(`📝 [TICKET COMMAND] Création de l'embed principal du système de tickets`);
     const embed = new EmbedBuilder()
       .setTitle('🎫 Gestion du Système de Tickets')
       .setDescription('Choisissez une action dans le menu ci-dessous')
@@ -32,6 +36,7 @@ module.exports = {
       )
       .setTimestamp();
 
+    console.log(`🔘 [TICKET COMMAND] Création des boutons d'action (6 boutons)`);
     const actionRow1 = new ActionRowBuilder<ButtonBuilder>()
       .addComponents(
         new ButtonBuilder()

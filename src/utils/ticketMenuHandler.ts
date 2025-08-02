@@ -16,9 +16,12 @@ import { TicketSetupDB, TicketCategoryDB, TicketPanelDB, TicketDB } from '../uti
 // Handle ticket panel creation
 export async function handleTicketCreatePanel(interaction: any) {
   try {
+    console.log(`🎫 [TICKET PANEL] Début de création de panel par ${interaction.user.tag}`);
+    
     const [, , , userId] = interaction.customId.split('_');
     
     if (interaction.user.id !== userId) {
+      console.log(`❌ [TICKET PANEL] Accès refusé - Utilisateur ${interaction.user.tag} tente d'utiliser le bouton d'un autre utilisateur`);
       return interaction.reply({ 
         content: 'Vous n\'êtes pas autorisé à utiliser ce bouton !', 
         flags: MessageFlags.Ephemeral 
@@ -27,24 +30,32 @@ export async function handleTicketCreatePanel(interaction: any) {
 
     // Check permissions
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageChannels)) {
+      console.log(`❌ [TICKET PANEL] Permission refusée pour ${interaction.user.tag} - ManageChannels requis`);
       return interaction.reply({ 
         content: 'Vous n\'avez pas la permission de gérer les salons !', 
         flags: MessageFlags.Ephemeral 
       });
     }
 
+    console.log(`✅ [TICKET PANEL] Permissions validées pour ${interaction.user.tag}`);
+
     // Get text channels for selection
+    console.log(`🔍 [TICKET PANEL] Récupération des salons textuels disponibles`);
     const textChannels = interaction.guild.channels.cache
       .filter((channel: any) => channel.type === ChannelType.GuildText)
       .first(25); // Discord limit
 
+    console.log(`📊 [TICKET PANEL] ${textChannels.length} salon(s) textuel(s) trouvé(s)`);
+
     if (textChannels.length === 0) {
+      console.log(`⚠️ [TICKET PANEL] Aucun salon textuel disponible`);
       return interaction.reply({
         content: 'Aucun salon textuel disponible sur ce serveur.',
         flags: MessageFlags.Ephemeral
       });
     }
 
+    console.log(`🎨 [TICKET PANEL] Création du menu de sélection de salon`);
     const selectMenu = new StringSelectMenuBuilder()
       .setCustomId(`ticket_panel_channel_${userId}`)
       .setPlaceholder('Choisissez un salon pour le panel de tickets')
@@ -70,7 +81,7 @@ export async function handleTicketCreatePanel(interaction: any) {
       );
 
     const embed = new EmbedBuilder()
-      .setTitle('📋 Création de Panel de Tickets')
+      .setTitle('📋 Création de panel de tickets')
       .setDescription('**Étape 1:** Sélectionnez le salon où créer le panel de tickets.\\n\\n' +
                       'Le panel permettra aux utilisateurs de créer des tickets selon les catégories que vous définirez.')
       .setColor(0x0099FF);
@@ -81,7 +92,7 @@ export async function handleTicketCreatePanel(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling ticket create panel:', error);
+    console.error('Erreur lors du traitement de la création du panel de tickets :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -114,13 +125,13 @@ export async function handleTicketPanelChannel(interaction: any) {
     // Show modal for panel customization
     const modal = new ModalBuilder()
       .setCustomId(`ticket_panel_setup_${userId}_${selectedChannelId}`)
-      .setTitle('Configuration du Panel de Tickets');
+      .setTitle('Configuration du panel de tickets');
 
     const titleInput = new TextInputBuilder()
       .setCustomId('panelTitle')
       .setLabel('Titre du panel')
       .setStyle(TextInputStyle.Short)
-      .setPlaceholder('Ex: Créer un Ticket')
+      .setPlaceholder('Ex: Créer un ticket')
       .setRequired(true)
       .setMaxLength(100);
 
@@ -149,7 +160,7 @@ export async function handleTicketPanelChannel(interaction: any) {
     await interaction.showModal(modal);
 
   } catch (error) {
-    console.error('Error handling ticket panel channel:', error);
+    console.error('[ERREUR] Erreur lors du traitement de la sélection du canal de tickets :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -202,7 +213,7 @@ export async function handleTicketPanelSetup(interaction: any) {
     
     if (categories.length === 0) {
       return interaction.reply({
-        content: '⚠️ Aucune catégorie de tickets configurée ! Créez d\'abord des catégories dans "Gérer Catégories".',
+        content: '⚠️ Aucune catégorie de tickets configurée ! Créez d\'abord des catégories dans "Gérer catégories".',
         flags: MessageFlags.Ephemeral
       });
     }
@@ -284,12 +295,12 @@ export async function handleTicketPanelSetup(interaction: any) {
           });
         }
       } catch (error) {
-        console.error('Error handling legacy ticket setup:', error);
+        console.error('[ERREUR] Erreur lors du traitement de la configuration héritée des tickets :', error);
         // Continue execution as the new table is our primary storage
       }
 
       const successEmbed = new EmbedBuilder()
-        .setTitle('✅ Panel de Tickets Créé')
+        .setTitle('✅ Panel de tickets Créé')
         .setDescription(`Le panel de tickets a été créé avec succès dans ${channel} !`)
         .addFields(
           { name: 'Salon', value: `<#${channel.id}>`, inline: true },
@@ -303,7 +314,7 @@ export async function handleTicketPanelSetup(interaction: any) {
         .addComponents(
           new ButtonBuilder()
             .setCustomId(`ticket_back_${userId}`)
-            .setLabel('Retour au Menu')
+            .setLabel('Retour au menu')
             .setStyle(ButtonStyle.Secondary)
             .setEmoji('🔙')
         );
@@ -315,7 +326,7 @@ export async function handleTicketPanelSetup(interaction: any) {
       });
 
     } catch (error) {
-      console.error('Error creating ticket panel:', error);
+      console.error('Erreur lors de la création du panel de tickets :', error);
       await interaction.reply({
         content: 'Erreur lors de la création du panel. Vérifiez mes permissions dans ce salon.',
         flags: MessageFlags.Ephemeral
@@ -323,7 +334,7 @@ export async function handleTicketPanelSetup(interaction: any) {
     }
 
   } catch (error) {
-    console.error('Error handling ticket panel setup:', error);
+    console.error('Erreur lors du traitement de la configuration du panel de tickets :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -336,17 +347,17 @@ export async function handleTicketBack(interaction: any) {
   const member = interaction.member;
   
   const embed = new EmbedBuilder()
-    .setTitle('🎫 Gestion du Système de Tickets')
+    .setTitle('🎫 Gestion du système de tickets')
     .setDescription('Choisissez une action dans le menu ci-dessous')
     .setColor(0x0099FF)
     .setThumbnail(interaction.guild.iconURL())
     .addFields(
-      { name: '📋 Créer un Panel', value: 'Créer un nouveau panel de tickets dans un salon', inline: true },
-      { name: '⚙️ Gérer les Catégories', value: 'Modifier les catégories et boutons de tickets', inline: true },
+      { name: '📋 Créer un panel', value: 'Créer un nouveau panel de tickets dans un salon', inline: true },
+      { name: '⚙️ Gérer les catégories', value: 'Modifier les catégories et boutons de tickets', inline: true },
       { name: '🎨 Personnaliser', value: 'Modifier l\'apparence des messages de tickets', inline: true },
       { name: '📊 Statistiques', value: 'Voir les statistiques des tickets', inline: true },
-      { name: '🗑️ Supprimer Panel', value: 'Supprimer un panel de tickets existant', inline: true },
-      { name: '📝 Lister les Panels', value: 'Voir tous les panels de tickets actifs', inline: true }
+      { name: '🗑️ Supprimer un panel', value: 'Supprimer un panel de tickets existant', inline: true },
+      { name: '📝 Lister les panels', value: 'Voir tous les panels de tickets actifs', inline: true }
     )
     .setTimestamp();
 
@@ -354,12 +365,12 @@ export async function handleTicketBack(interaction: any) {
     .addComponents(
       new ButtonBuilder()
         .setCustomId(`ticket_create_panel_${member.user.id}`)
-        .setLabel('Créer un Panel')
+        .setLabel('Créer un panel')
         .setStyle(ButtonStyle.Primary)
         .setEmoji('📋'),
       new ButtonBuilder()
         .setCustomId(`ticket_manage_categories_${member.user.id}`)
-        .setLabel('Gérer Catégories')
+        .setLabel('Gérer catégories')
         .setStyle(ButtonStyle.Secondary)
         .setEmoji('⚙️'),
       new ButtonBuilder()
@@ -378,12 +389,12 @@ export async function handleTicketBack(interaction: any) {
         .setEmoji('📊'),
       new ButtonBuilder()
         .setCustomId(`ticket_delete_panel_${member.user.id}`)
-        .setLabel('Supprimer Panel')
+        .setLabel('Supprimer un panel')
         .setStyle(ButtonStyle.Danger)
         .setEmoji('🗑️'),
       new ButtonBuilder()
         .setCustomId(`ticket_list_panels_${member.user.id}`)
-        .setLabel('Lister Panels')
+        .setLabel('Lister les panels')
         .setStyle(ButtonStyle.Secondary)
         .setEmoji('📝')
     );
@@ -417,7 +428,7 @@ export async function handleTicketManageCategories(interaction: any) {
     const categories = await TicketCategoryDB.findByGuild(interaction.guild.id);
 
     const embed = new EmbedBuilder()
-      .setTitle('⚙️ Gestion des Catégories de Tickets')
+      .setTitle('⚙️ Gestion des catégories de tickets')
       .setDescription('Gérez les catégories de tickets disponibles sur votre serveur.')
       .setColor(0x0099FF);
 
@@ -428,24 +439,24 @@ export async function handleTicketManageCategories(interaction: any) {
         `└ Message: ${cat.openMessage ? 'Configuré' : 'Aucun'}`
       ).join('\n\n');
       
-      embed.addFields({ name: 'Catégories Actuelles', value: categoryList, inline: false });
+      embed.addFields({ name: 'Catégories actuelles', value: categoryList, inline: false });
     }
 
     const actionRow = new ActionRowBuilder<ButtonBuilder>()
       .addComponents(
         new ButtonBuilder()
           .setCustomId(`category_create_${userId}`)
-          .setLabel('Créer Catégorie')
+          .setLabel('Créer une catégorie')
           .setStyle(ButtonStyle.Success)
           .setEmoji('➕'),
         new ButtonBuilder()
           .setCustomId(`category_edit_${userId}`)
-          .setLabel('Modifier Catégorie')
+          .setLabel('Modifier une catégorie')
           .setStyle(ButtonStyle.Primary)
           .setEmoji('✏️'),
         new ButtonBuilder()
           .setCustomId(`category_delete_${userId}`)
-          .setLabel('Supprimer Catégorie')
+          .setLabel('Supprimer une catégorie')
           .setStyle(ButtonStyle.Danger)
           .setEmoji('🗑️')
       );
@@ -465,7 +476,7 @@ export async function handleTicketManageCategories(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling ticket manage categories:', error);
+    console.error('Erreur lors du traitement de la gestion des catégories de tickets :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -491,7 +502,7 @@ export async function handleTicketCustomize(interaction: any) {
     if (panels.length === 0) {
       return interaction.update({
         embeds: [new EmbedBuilder()
-          .setTitle('⚠️ Aucun Panel Trouvé')
+          .setTitle('⚠️ Aucun panel trouvé')
           .setDescription('Aucun panel de tickets n\'a été trouvé. Créez d\'abord un panel.')
           .setColor(0xFFAA00)],
         components: [new ActionRowBuilder<ButtonBuilder>()
@@ -518,7 +529,7 @@ export async function handleTicketCustomize(interaction: any) {
       .addOptions(selectOptions);
 
     const embed = new EmbedBuilder()
-      .setTitle('🎨 Personnaliser un Panel')
+      .setTitle('🎨 Personnaliser un panel')
       .setDescription('Sélectionnez le panel que vous souhaitez personnaliser.')
       .setColor(0x0099FF);
 
@@ -540,7 +551,7 @@ export async function handleTicketCustomize(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling ticket customize:', error);
+    console.error('[ERREUR] Erreur lors du traitement de la personnalisation des tickets :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -580,11 +591,11 @@ export async function handleTicketStats(interaction: any) {
       .setTitle('📊 Statistiques des Tickets')
       .setDescription('Voici les statistiques actuelles du système de tickets sur ce serveur.')
       .addFields(
-        { name: '🎫 Total des Tickets', value: totalTickets.toString(), inline: true },
-        { name: '🟢 Tickets Ouverts', value: openTickets.toString(), inline: true },
-        { name: '🔴 Tickets Fermés', value: closedTickets.toString(), inline: true },
-        { name: '� Catégories Configurées', value: categoriesCount.toString(), inline: true },
-        { name: '📈 Répartition par Catégorie', value: categoryStats, inline: false }
+        { name: '🎫 Total des tickets', value: totalTickets.toString(), inline: true },
+        { name: '🟢 Tickets ouverts', value: openTickets.toString(), inline: true },
+        { name: '🔴 Tickets fermés', value: closedTickets.toString(), inline: true },
+        { name: '📁 Catégories configurées', value: categoriesCount.toString(), inline: true },
+        { name: '📈 Répartition par catégorie', value: categoryStats, inline: false }
       )
       .setColor(0x00FF00)
       .setTimestamp();
@@ -604,7 +615,7 @@ export async function handleTicketStats(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling ticket stats:', error);
+    console.error('[ERREUR] Erreur lors du traitement des statistiques de tickets :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -630,7 +641,7 @@ export async function handleTicketDeletePanel(interaction: any) {
     if (panels.length === 0) {
       return interaction.update({
         embeds: [new EmbedBuilder()
-          .setTitle('⚠️ Aucun Panel Trouvé')
+          .setTitle('⚠️ Aucun panel trouvé')
           .setDescription('Aucun panel de tickets n\'a été trouvé.')
           .setColor(0xFFAA00)],
         components: [new ActionRowBuilder<ButtonBuilder>()
@@ -660,7 +671,7 @@ export async function handleTicketDeletePanel(interaction: any) {
       .addOptions(selectOptions);
 
     const embed = new EmbedBuilder()
-      .setTitle('🗑️ Supprimer un Panel')
+      .setTitle('🗑️ Supprimer un panel')
       .setDescription('⚠️ **Attention:** La suppression d\'un panel est définitive et supprimera le message du panel.')
       .setColor(0xFF4444);
 
@@ -682,7 +693,7 @@ export async function handleTicketDeletePanel(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling ticket delete panel:', error);
+    console.error('Erreur lors du traitement de la suppression du panel :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -707,7 +718,7 @@ export async function handleTicketListPanels(interaction: any) {
 
     if (panels.length === 0) {
       const embed = new EmbedBuilder()
-        .setTitle('📝 Liste des Panels')
+        .setTitle('📝 Liste des panels')
         .setDescription('Aucun panel de tickets n\'a été trouvé sur ce serveur.')
         .setColor(0xFFAA00);
 
@@ -741,7 +752,7 @@ ${status}`;
     }).join('\n\n');
 
     const embed = new EmbedBuilder()
-      .setTitle('📝 Liste des Panels de Tickets')
+      .setTitle('📝 Liste des panels de tickets')
       .setDescription(`**${panels.length}** panel(s) trouvé(s) sur ce serveur:\n\n${panelList}`)
       .setColor(0x0099FF)
       .setFooter({ text: `Total: ${panels.length} panel(s)` })
@@ -751,12 +762,12 @@ ${status}`;
       .addComponents(
         new ButtonBuilder()
           .setCustomId(`ticket_create_panel_${userId}`)
-          .setLabel('Créer un Panel')
+          .setLabel('Créer un panel')
           .setStyle(ButtonStyle.Success)
           .setEmoji('➕'),
         new ButtonBuilder()
           .setCustomId(`ticket_delete_panel_${userId}`)
-          .setLabel('Supprimer Panel')
+          .setLabel('Supprimer un panel')
           .setStyle(ButtonStyle.Danger)
           .setEmoji('🗑️'),
         new ButtonBuilder()
@@ -781,7 +792,7 @@ ${status}`;
     });
 
   } catch (error) {
-    console.error('Error handling ticket list panels:', error);
+    console.error('Erreur lors du traitement de la liste des panels :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -855,7 +866,7 @@ export async function handleCategoryCreate(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling category create:', error);
+    console.error('Erreur lors du traitement de la création de catégorie :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -891,7 +902,7 @@ export async function handleCategorySelectDiscord(interaction: any) {
       .addOptions(styleOptions);
 
     const embed = new EmbedBuilder()
-      .setTitle('🎨 Choisir la Couleur du Bouton')
+      .setTitle('🎨 Choisir la couleur du bouton')
       .setDescription('Sélectionnez la couleur que vous souhaitez pour le bouton de cette catégorie.')
       .setColor(0x0099FF);
 
@@ -913,7 +924,7 @@ export async function handleCategorySelectDiscord(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling Discord category select:', error);
+    console.error('Erreur lors du traitement de la sélection de catégorie Discord :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -938,7 +949,7 @@ export async function handleCategoryStyleSelect(interaction: any) {
     // Show modal for category creation
     const modal = new ModalBuilder()
       .setCustomId(`category_create_modal_${userId}_${discordCategoryId}_${selectedStyle}`)
-      .setTitle('Créer une Catégorie de Tickets');
+      .setTitle('Créer une catégorie de tickets');
 
     const keyInput = new TextInputBuilder()
       .setCustomId('categoryKey')
@@ -952,7 +963,7 @@ export async function handleCategoryStyleSelect(interaction: any) {
       .setCustomId('categoryName')
       .setLabel('Nom de la catégorie')
       .setStyle(TextInputStyle.Short)
-      .setPlaceholder('Ex: Support Général')
+      .setPlaceholder('Ex: Support général')
       .setRequired(true)
       .setMaxLength(100);
 
@@ -991,7 +1002,7 @@ export async function handleCategoryStyleSelect(interaction: any) {
     await interaction.showModal(modal);
 
   } catch (error) {
-    console.error('Error handling style select:', error);
+    console.error('Erreur lors du traitement de la sélection de style :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -1049,7 +1060,7 @@ export async function handleCategoryCreateModal(interaction: any) {
         });
         finalDiscordCategoryId = newCategory.id;
       } catch (error) {
-        console.error('Error creating Discord category:', error);
+        console.error('Erreur lors de la création de la catégorie Discord :', error);
         return interaction.reply({
           content: 'Erreur lors de la création de la catégorie Discord.',
           flags: MessageFlags.Ephemeral
@@ -1085,7 +1096,7 @@ export async function handleCategoryCreateModal(interaction: any) {
           { name: 'Clé', value: categoryKey, inline: true },
           { name: 'Bouton', value: `${buttonEmoji || ''} ${buttonLabel}`, inline: true },
           { name: 'Couleur', value: styleNames[buttonStyle as keyof typeof styleNames], inline: true },
-          { name: 'Catégorie Discord', value: categoryChannel?.name || 'Inconnue', inline: true },
+          { name: 'Catégorie discord', value: categoryChannel?.name || 'Inconnue', inline: true },
           { name: 'Message d\'ouverture', value: openMessage || 'Aucun', inline: false }
         )
         .setColor(0x00FF00)
@@ -1095,7 +1106,7 @@ export async function handleCategoryCreateModal(interaction: any) {
         .addComponents(
           new ButtonBuilder()
             .setCustomId(`ticket_manage_categories_${userId}`)
-            .setLabel('Retour aux Catégories')
+            .setLabel('Retour aux catégories')
             .setStyle(ButtonStyle.Secondary)
             .setEmoji('🔙')
         );
@@ -1107,7 +1118,7 @@ export async function handleCategoryCreateModal(interaction: any) {
       });
 
     } catch (error) {
-      console.error('Error creating category:', error);
+      console.error('Erreur lors de la création de la catégorie :', error);
       await interaction.reply({
         content: 'Erreur lors de la création de la catégorie.',
         flags: MessageFlags.Ephemeral
@@ -1115,7 +1126,7 @@ export async function handleCategoryCreateModal(interaction: any) {
     }
 
   } catch (error) {
-    console.error('Error handling category create modal:', error);
+    console.error('Erreur lors du traitement du modal de création de catégorie :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -1179,7 +1190,7 @@ export async function handleCategoryEdit(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling category edit:', error);
+    console.error('[ERREUR] Erreur lors du traitement de la modification de catégorie :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -1243,7 +1254,7 @@ export async function handleCategoryDelete(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling category delete:', error);
+    console.error('[ERREUR] Erreur lors du traitement de la suppression de catégorie :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -1316,7 +1327,7 @@ export async function handleCategoryEditSelect(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling category edit select:', error);
+    console.error('[ERREUR] Erreur lors du traitement de la sélection de modification de catégorie :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -1403,7 +1414,7 @@ export async function handleCategoryEditStyleSelect(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling category edit style select:', error);
+    console.error('[ERREUR] Erreur lors du traitement de la sélection de style de modification de catégorie :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -1484,7 +1495,7 @@ export async function handleCategoryEditDiscordSelect(interaction: any) {
     await interaction.showModal(modal);
 
   } catch (error) {
-    console.error('Error handling category edit Discord select:', error);
+    console.error('[ERREUR] Erreur lors du traitement de la sélection Discord de modification de catégorie :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -1559,7 +1570,7 @@ export async function handleCategoryEditModal(interaction: any) {
             finalDiscordCategoryId = newCategory.id;
             updateData.discordCategoryId = finalDiscordCategoryId;
           } catch (error) {
-            console.error('Error creating Discord category:', error);
+            console.error('[ERREUR] Erreur lors de la création de la catégorie Discord :', error);
             return interaction.reply({
               content: 'Erreur lors de la création de la catégorie Discord.',
               flags: MessageFlags.Ephemeral
@@ -1616,7 +1627,7 @@ export async function handleCategoryEditModal(interaction: any) {
       });
 
     } catch (error) {
-      console.error('Error updating category:', error);
+      console.error('[ERREUR] Erreur lors de la mise à jour de la catégorie :', error);
       await interaction.reply({
         content: 'Erreur lors de la modification de la catégorie.',
         flags: MessageFlags.Ephemeral
@@ -1624,7 +1635,7 @@ export async function handleCategoryEditModal(interaction: any) {
     }
 
   } catch (error) {
-    console.error('Error handling category edit modal:', error);
+    console.error('[ERREUR] Erreur lors du traitement du modal de modification de catégorie :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -1684,7 +1695,7 @@ export async function handleCategoryDeleteSelect(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling category delete select:', error);
+    console.error('[ERREUR] Erreur lors du traitement de la sélection de suppression de catégorie :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -1736,7 +1747,7 @@ export async function handleCategoryDeleteConfirm(interaction: any) {
       });
 
     } catch (error) {
-      console.error('Error deleting category:', error);
+      console.error('[ERREUR] Erreur lors de la suppression de la catégorie :', error);
       await interaction.reply({
         content: 'Erreur lors de la suppression de la catégorie.',
         flags: MessageFlags.Ephemeral
@@ -1744,7 +1755,7 @@ export async function handleCategoryDeleteConfirm(interaction: any) {
     }
 
   } catch (error) {
-    console.error('Error handling category delete confirm:', error);
+    console.error('[ERREUR] Erreur lors du traitement de la confirmation de suppression de catégorie :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -1815,7 +1826,7 @@ export async function handlePanelCustomizeSelect(interaction: any) {
     await interaction.showModal(modal);
 
   } catch (error) {
-    console.error('Error handling panel customize select:', error);
+    console.error('[ERREUR] Erreur lors du traitement de la sélection de personnalisation du panel :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -1908,7 +1919,7 @@ export async function handlePanelCustomizeModal(interaction: any) {
             await message.edit({ embeds: [updatedEmbed], components });
           }
         } catch (error) {
-          console.error('Error updating Discord message:', error);
+          console.error('[ERREUR] Erreur lors de la mise à jour du message Discord :', error);
         }
       }
 
@@ -1934,7 +1945,7 @@ export async function handlePanelCustomizeModal(interaction: any) {
       });
 
     } catch (error) {
-      console.error('Error updating panel:', error);
+      console.error('[ERREUR] Erreur lors de la mise à jour du panel :', error);
       await interaction.reply({
         content: 'Erreur lors de la personnalisation du panel.',
         flags: MessageFlags.Ephemeral
@@ -1942,7 +1953,7 @@ export async function handlePanelCustomizeModal(interaction: any) {
     }
 
   } catch (error) {
-    console.error('Error handling panel customize modal:', error);
+    console.error('[ERREUR] Erreur lors du traitement du modal de personnalisation du panel :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -2004,7 +2015,7 @@ export async function handlePanelDeleteSelect(interaction: any) {
     });
 
   } catch (error) {
-    console.error('Error handling panel delete select:', error);
+    console.error('[ERREUR] Erreur lors du traitement de la sélection de suppression du panel :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 
@@ -2040,7 +2051,7 @@ export async function handlePanelDeleteConfirm(interaction: any) {
           const message = await channel.messages.fetch(panel.messageId);
           await message.delete();
         } catch (error) {
-          console.error('Error deleting Discord message:', error);
+          console.error('[ERREUR] Erreur lors de la suppression du message Discord :', error);
         }
       }
 
@@ -2058,7 +2069,7 @@ export async function handlePanelDeleteConfirm(interaction: any) {
           }
         }
       } catch (error) {
-        console.error('Error cleaning up legacy ticket setup:', error);
+        console.error('[ERREUR] Erreur lors du nettoyage de l\'ancien système de tickets :', error);
         // Continue execution as this is not critical
       }
 
@@ -2083,7 +2094,7 @@ export async function handlePanelDeleteConfirm(interaction: any) {
       });
 
     } catch (error) {
-      console.error('Error deleting panel:', error);
+      console.error('[ERREUR] Erreur lors de la suppression du panel :', error);
       await interaction.reply({
         content: 'Erreur lors de la suppression du panel.',
         flags: MessageFlags.Ephemeral
@@ -2091,7 +2102,7 @@ export async function handlePanelDeleteConfirm(interaction: any) {
     }
 
   } catch (error) {
-    console.error('Error handling panel delete confirm:', error);
+    console.error('[ERREUR] Erreur lors du traitement de la confirmation de suppression du panel :', error);
     await interaction.reply({ 
       content: 'Une erreur est survenue.', 
       flags: MessageFlags.Ephemeral 

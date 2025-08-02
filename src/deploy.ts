@@ -15,9 +15,9 @@ for (const file of commandFiles) {
   const command = require(filePath);
   if ('data' in command && 'execute' in command) {
     commands.push(command.data.toJSON());
-    console.log(`[INFO] Loaded command: ${command.data.name}`);
+    console.log(`[INFO] Commande chargée : ${command.data.name}`);
   } else {
-    console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
+    console.log(`[AVERTISSEMENT] La commande dans ${filePath} manque d'une propriété "data" ou "execute" requise.`);
   }
 }
 
@@ -26,7 +26,7 @@ const rest = new REST().setToken(process.env.DISCORD_TOKEN!);
 
 (async () => {
   try {
-    console.log(`Started refreshing ${commands.length} application (/) commands.`);
+    console.log(`Début du rafraîchissement des ${commands.length} commandes d'application (/).`);
 
     // Deploy to guild (faster for development)
     if (process.env.GUILD_ID) {
@@ -35,7 +35,7 @@ const rest = new REST().setToken(process.env.DISCORD_TOKEN!);
         { body: commands },
       ) as any[];
 
-      console.log(`Successfully reloaded ${data.length} application (/) commands for guild.`);
+      console.log(`Rechargement réussi de ${data.length} commandes d'application (/) pour le serveur.`);
     } else {
       // Deploy globally (takes up to 1 hour to propagate)
       const data = await rest.put(
@@ -43,9 +43,9 @@ const rest = new REST().setToken(process.env.DISCORD_TOKEN!);
         { body: commands },
       ) as any[];
 
-      console.log(`Successfully reloaded ${data.length} application (/) commands globally.`);
+      console.log(`Rechargement réussi de ${data.length} commandes d'application (/) globalement.`);
     }
   } catch (error) {
-    console.error(error);
+    console.error('[ERREUR] Échec du déploiement des commandes :', error);
   }
 })();
