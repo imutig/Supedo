@@ -22,6 +22,8 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMessageReactions,
+    GatewayIntentBits.DirectMessages,
   ],
 }) as ClientWithCommands;
 
@@ -36,7 +38,9 @@ async function startBot() {
 
     // Load commands
     const commandsPath = join(__dirname, 'commands');
-    const commandFiles = readdirSync(commandsPath).filter(file => file.endsWith('.js') || file.endsWith('.ts'));
+    const commandFiles = readdirSync(commandsPath).filter(file => 
+      (file.endsWith('.js') || file.endsWith('.ts')) && !file.endsWith('.d.ts')
+    );
 
     for (const file of commandFiles) {
       const filePath = join(commandsPath, file);
@@ -51,7 +55,9 @@ async function startBot() {
 
     // Load events
     const eventsPath = join(__dirname, 'events');
-    const eventFiles = readdirSync(eventsPath).filter(file => file.endsWith('.js') || file.endsWith('.ts'));
+    const eventFiles = readdirSync(eventsPath).filter(file => 
+      (file.endsWith('.js') || file.endsWith('.ts')) && !file.endsWith('.d.ts')
+    );
 
     for (const file of eventFiles) {
       const filePath = join(eventsPath, file);

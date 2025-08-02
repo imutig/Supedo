@@ -17,8 +17,8 @@ export class TicketSetup {
   @Column({ name: 'embed_title', default: 'Create a Ticket' })
   embedTitle: string;
 
-  @Column({ name: 'embed_description', type: 'text', default: 'Click the button below to create a support ticket.' })
-  embedDescription: string;
+  @Column({ name: 'embed_description', type: 'text', nullable: true })
+  embedDescription?: string;
 
   @Column({ name: 'embed_color', default: '#0099FF' })
   embedColor: string;

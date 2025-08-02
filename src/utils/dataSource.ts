@@ -4,6 +4,8 @@ import { RoleRequest } from './entities/RoleRequest';
 import { TicketSetup } from './entities/TicketSetup';
 import { Ticket } from './entities/Ticket';
 import { RoleGroup } from './entities/RoleGroup';
+import { TicketCategory } from './entities/TicketCategory';
+import { TicketPanel } from './entities/TicketPanel';
 
 config();
 
@@ -17,7 +19,7 @@ export const AppDataSource = new DataSource({
   ssl: process.env.DB_SSL === 'true',
   synchronize: true, // Set to false in production
   logging: false,
-  entities: [RoleRequest, TicketSetup, Ticket, RoleGroup],
+  entities: [RoleRequest, TicketSetup, Ticket, RoleGroup, TicketCategory, TicketPanel],
   migrations: ['src/migrations/**/*.ts'],
   subscribers: ['src/subscribers/**/*.ts'],
 });

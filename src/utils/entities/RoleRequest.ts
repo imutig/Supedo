@@ -14,6 +14,9 @@ export class RoleRequest {
   @Column({ name: 'guild_id' })
   guildId: string;
 
+  @Column({ name: 'message_id', nullable: true })
+  messageId?: string;
+
   @Column({
     type: 'enum',
     enum: ['pending', 'approved', 'denied'],

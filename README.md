@@ -1,6 +1,16 @@
 # Supedo Discord Bot
 
-A Discord bot designed for role management and ticket systems, built specifically for single-server use.
+A Discord bot designed for role management and t6. **Build the project**:
+   ```bash
+   npm run build
+   ```
+
+7. **Deploy slash commands**:
+   ```bash
+   npm run deploy
+   ```
+
+8. **Start the bot**:ms, built specifically for single-server use.
 
 ## Features
 
@@ -42,7 +52,20 @@ A Discord bot designed for role management and ticket systems, built specificall
    npm install
    ```
 
-4. **Environment Configuration**:
+4. **Discord Bot Setup**:
+   - Go to [Discord Developer Portal](https://discord.com/developers/applications)
+   - Create a new application or select your existing bot
+   - Go to the "Bot" section and copy your bot token
+   - **Important**: Enable the following intents in the Bot section:
+     - ✅ **Server Members Intent** (required for role management)
+     - ✅ **Message Content Intent** (required for message processing)
+     - ✅ **All other intents** (recommended for full functionality)
+   - Go to OAuth2 > URL Generator and select:
+     - **Scopes**: `bot`, `applications.commands`  
+     - **Bot Permissions**: `Manage Roles`, `Manage Channels`, `Send Messages`, `Use Slash Commands`, `Embed Links`, `Read Message History`
+   - Use the generated URL to invite your bot to your server
+
+5. **Environment Configuration**:
    - Copy `.env.example` to `.env`
    - Fill in your Discord bot credentials and MySQL database details:
      ```env
@@ -58,17 +81,17 @@ A Discord bot designed for role management and ticket systems, built specificall
      DB_SSL=false
      ```
 
-4. **Build the project**:
+6. **Build the project**:
    ```bash
    npm run build
    ```
 
-5. **Deploy slash commands**:
+7. **Deploy slash commands**:
    ```bash
    npm run deploy
    ```
 
-6. **Start the bot**:
+8. **Start the bot**:
    ```bash
    npm start
    ```

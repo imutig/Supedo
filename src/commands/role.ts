@@ -1,87 +1,92 @@
-import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } from 'discord.js';
-import { RoleRequestDB } from '../utils/database';
+import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags, PermissionFlagsBits } from 'discord.js';
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('role')
-    .setDescription('Request a role from the server')
-    .addStringOption(option =>
-      option.setName('role')
-        .setDescription('The role you want to request')
-        .setRequired(true)
-        .setAutocomplete(true)),
+    .setDescription('Menu principal de gestion des rôles'),
 
   async execute(interaction: any) {
-    const roleName = interaction.options.getString('role');
-    const member = interaction.member;
-    const guild = interaction.guild;
+    try {
+      const member = interaction.member;
+      const hasManageRoles = member.permissions.has(PermissionFlagsBits.ManageRoles);
 
-    // Check if role exists
-    const role = guild.roles.cache.find((r: any) => r.name.toLowerCase() === roleName.toLowerCase());
-    if (!role) {
-      return interaction.reply({ content: 'That role does not exist!', ephemeral: true });
+      const embed = new EmbedBuilder()
+        .setTitle('🎭 Gestion des Rôles')
+        .setDescription('Choisissez une action dans le menu ci-dessous')
+        .setColor(0x0099FF)
+        .setThumbnail(interaction.guild.iconURL())
+        .addFields(
+          { name: '👤 Demander un rôle', value: 'Demander un rôle spécifique ou un groupe de rôles', inline: true },
+          { name: '❌ Retirer un rôle', value: 'Retirer un rôle que vous possédez', inline: true },
+          { name: '📋 Mes rôles', value: 'Voir la liste de vos rôles actuels', inline: true }
+        )
+        .setTimestamp();
+
+      // User buttons (everyone can use these)
+      const userRow = new ActionRowBuilder<ButtonBuilder>()
+        .addComponents(
+          new ButtonBuilder()
+            .setCustomId(`role_request_${member.user.id}`)
+            .setLabel('Demander un Rôle')
+            .setStyle(ButtonStyle.Primary)
+            .setEmoji('👤'),
+          new ButtonBuilder()
+            .setCustomId(`role_remove_${member.user.id}`)
+            .setLabel('Retirer un Rôle')
+            .setStyle(ButtonStyle.Danger)
+            .setEmoji('❌'),
+          new ButtonBuilder()
+            .setCustomId(`role_list_${member.user.id}`)
+            .setLabel('Mes Rôles')
+            .setStyle(ButtonStyle.Secondary)
+            .setEmoji('📋')
+        );
+
+      const components = [userRow];
+
+      // Admin buttons (only for users with Manage Roles permission)
+      if (hasManageRoles) {
+        embed.addFields(
+          { name: '⚙️ Administration', value: 'Gérer les groupes de rôles (Admin uniquement)', inline: false }
+        );
+
+        const adminRow = new ActionRowBuilder<ButtonBuilder>()
+          .addComponents(
+            new ButtonBuilder()
+              .setCustomId(`rolegroup_manage_${member.user.id}`)
+              .setLabel('Gérer les Groupes')
+              .setStyle(ButtonStyle.Success)
+              .setEmoji('⚙️'),
+            new ButtonBuilder()
+              .setCustomId(`role_pending_${member.user.id}`)
+              .setLabel('Demandes en Attente')
+              .setStyle(ButtonStyle.Secondary)
+              .setEmoji('⏳')
+          );
+
+        components.push(adminRow);
+      }
+
+      await interaction.reply({ 
+        embeds: [embed], 
+        components: components,
+        flags: MessageFlags.Ephemeral 
+      });
+
+    } catch (error) {
+      console.error('Error in role command:', error);
+      
+      if (!interaction.replied && !interaction.deferred) {
+        try {
+          await interaction.reply({ 
+            content: 'Une erreur est survenue lors du traitement de votre demande.', 
+            flags: MessageFlags.Ephemeral 
+          });
+        } catch (replyError) {
+          console.error('Failed to send error reply:', replyError);
+        }
+      }
+      throw error;
     }
-
-    // Check if user already has the role
-    if (member.roles.cache.has(role.id)) {
-      return interaction.reply({ content: 'You already have this role!', ephemeral: true });
-    }
-
-    // Check if role is manageable
-    if (role.managed || role.name === '@everyone') {
-      return interaction.reply({ content: 'This role cannot be requested!', ephemeral: true });
-    }
-
-    // Check if user already has a pending request for this role
-    const existingRequest = await RoleRequestDB.findByUserAndRole(member.user.id, role.id);
-    if (existingRequest && existingRequest.status === 'pending') {
-      return interaction.reply({ content: 'You already have a pending request for this role!', ephemeral: true });
-    }
-
-    // Create role request embed
-    const requestEmbed = new EmbedBuilder()
-      .setTitle('Role Request')
-      .setDescription(`${member.user.tag} has requested the **${role.name}** role.`)
-      .setColor(role.color || 0x0099FF)
-      .setThumbnail(member.user.displayAvatarURL())
-      .addFields(
-        { name: 'User', value: `<@${member.user.id}>`, inline: true },
-        { name: 'Role', value: `<@&${role.id}>`, inline: true },
-        { name: 'Requested at', value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: false }
-      )
-      .setTimestamp();
-
-    // Create buttons
-    const actionRow = new ActionRowBuilder<ButtonBuilder>()
-      .addComponents(
-        new ButtonBuilder()
-          .setCustomId(`approve_role_${member.user.id}_${role.id}`)
-          .setLabel('Approve')
-          .setStyle(ButtonStyle.Success)
-          .setEmoji('✅'),
-        new ButtonBuilder()
-          .setCustomId(`deny_role_${member.user.id}_${role.id}`)
-          .setLabel('Deny')
-          .setStyle(ButtonStyle.Danger)
-          .setEmoji('❌')
-      );
-
-    // Store request in database
-    await RoleRequestDB.create({
-      userId: member.user.id,
-      roleId: role.id,
-      guildId: guild.id
-    });
-
-    // Find a channel to send the request (you might want to configure this)
-    const logChannel = guild.channels.cache.find((c: any) => c.name === 'role-requests' || c.name === 'mod-log');
-    if (logChannel && logChannel.isTextBased()) {
-      await logChannel.send({ embeds: [requestEmbed], components: [actionRow] });
-    }
-
-    await interaction.reply({ 
-      content: `Your request for the **${role.name}** role has been submitted for approval!`, 
-      ephemeral: true 
-    });
   },
 };

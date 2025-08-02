@@ -4,22 +4,23 @@ import {
   ButtonBuilder, 
   ButtonStyle, 
   ChannelType,
-  PermissionFlagsBits 
+  PermissionFlagsBits,
+  MessageFlags 
 } from 'discord.js';
-import { RoleRequestDB, TicketDB } from '../utils/database';
+import { RoleRequestDB, TicketDB, RoleGroupDB, TicketCategoryDB } from '../utils/database';
 
 export async function handleRoleButtons(interaction: any) {
   const [action, , userId, roleId] = interaction.customId.split('_');
   
   // Check if user has permission to manage roles
   if (!interaction.member.permissions.has(PermissionFlagsBits.ManageRoles)) {
-    return interaction.reply({ content: 'You do not have permission to manage role requests!', ephemeral: true });
+    return interaction.reply({ content: 'Vous n\'avez pas la permission de gérer les demandes de rôles !', flags: MessageFlags.Ephemeral });
   }
 
   const request = await RoleRequestDB.findByUserAndRole(userId, roleId);
   
   if (!request) {
-    return interaction.reply({ content: 'This role request no longer exists!', ephemeral: true });
+    return interaction.reply({ content: 'Cette demande de rôle n\'existe plus !', flags: MessageFlags.Ephemeral });
   }
 
   const guild = interaction.guild;
@@ -27,7 +28,7 @@ export async function handleRoleButtons(interaction: any) {
   const role = await guild.roles.fetch(roleId);
 
   if (!member || !role) {
-    return interaction.reply({ content: 'Member or role not found!', ephemeral: true });
+    return interaction.reply({ content: 'Membre ou rôle introuvable !', flags: MessageFlags.Ephemeral });
   }
 
   if (action === 'approve') {
@@ -38,13 +39,13 @@ export async function handleRoleButtons(interaction: any) {
       await RoleRequestDB.updateStatus(request.id, 'approved', interaction.user.id);
 
       const embed = new EmbedBuilder()
-        .setTitle('Role Request Approved')
-        .setDescription(`${member.user.tag} has been given the **${role.name}** role.`)
+        .setTitle('Demande de Rôle Approuvée')
+        .setDescription(`${member.user.tag} a reçu le rôle **${role.name}**.`)
         .setColor(0x00FF00)
         .addFields(
-          { name: 'Approved by', value: `<@${interaction.user.id}>`, inline: true },
-          { name: 'User', value: `<@${member.user.id}>`, inline: true },
-          { name: 'Role', value: `<@&${role.id}>`, inline: true }
+          { name: 'Approuvé par', value: `<@${interaction.user.id}>`, inline: true },
+          { name: 'Utilisateur', value: `<@${member.user.id}>`, inline: true },
+          { name: 'Rôle', value: `<@&${role.id}>`, inline: true }
         )
         .setTimestamp();
 
@@ -52,24 +53,24 @@ export async function handleRoleButtons(interaction: any) {
 
       // DM the user
       try {
-        await member.send(`Your request for the **${role.name}** role in **${guild.name}** has been approved!`);
+        await member.send(`Votre demande pour le rôle **${role.name}** dans **${guild.name}** a été approuvée !`);
       } catch (error) {
         // User has DMs disabled
       }
     } catch (error) {
-      await interaction.reply({ content: 'Failed to add role to user!', ephemeral: true });
+      await interaction.reply({ content: 'Échec de l\'ajout du rôle à l\'utilisateur !', flags: MessageFlags.Ephemeral });
     }
   } else if (action === 'deny') {
     await RoleRequestDB.updateStatus(request.id, 'denied', interaction.user.id);
 
     const embed = new EmbedBuilder()
-      .setTitle('Role Request Denied')
-      .setDescription(`${member.user.tag}'s request for the **${role.name}** role has been denied.`)
+      .setTitle('Demande de Rôle Refusée')
+      .setDescription(`La demande de ${member.user.tag} pour le rôle **${role.name}** a été refusée.`)
       .setColor(0xFF0000)
       .addFields(
-        { name: 'Denied by', value: `<@${interaction.user.id}>`, inline: true },
-        { name: 'User', value: `<@${member.user.id}>`, inline: true },
-        { name: 'Role', value: `<@&${role.id}>`, inline: true }
+        { name: 'Refusé par', value: `<@${interaction.user.id}>`, inline: true },
+        { name: 'Utilisateur', value: `<@${member.user.id}>`, inline: true },
+        { name: 'Rôle', value: `<@&${role.id}>`, inline: true }
       )
       .setTimestamp();
 
@@ -77,7 +78,7 @@ export async function handleRoleButtons(interaction: any) {
 
     // DM the user
     try {
-      await member.send(`Your request for the **${role.name}** role in **${guild.name}** has been denied.`);
+      await member.send(`Votre demande pour le rôle **${role.name}** dans **${guild.name}** a été refusée.`);
     } catch (error) {
       // User has DMs disabled
     }
@@ -85,22 +86,47 @@ export async function handleRoleButtons(interaction: any) {
 }
 
 export async function handleTicketButtons(interaction: any) {
-  const [, , type] = interaction.customId.split('_');
+  const [, , categoryKey] = interaction.customId.split('_');
   const guild = interaction.guild;
   const member = interaction.member;
+
+  // Defer the reply immediately to avoid timeout
+  await interaction.deferReply({ ephemeral: true });
 
   // Check if user already has an open ticket
   const existingTickets = await TicketDB.findOpenByUser(member.user.id, guild.id);
 
   if (existingTickets.length > 0) {
-    return interaction.reply({ 
-      content: `You already have an open ticket: <#${existingTickets[0].channelId}>`, 
-      ephemeral: true 
+    return interaction.editReply({ 
+      content: `Vous avez déjà un ticket ouvert: <#${existingTickets[0].channelId}>` 
     });
   }
 
-  // Find or create tickets category
-  let category = guild.channels.cache.find((c: any) => c.name === 'Tickets' && c.type === ChannelType.GuildCategory);
+  // Get the custom category from database
+  const ticketCategory = await TicketCategoryDB.findByCategoryKey(guild.id, categoryKey);
+  
+  if (!ticketCategory) {
+    return interaction.editReply({ 
+      content: 'Type de ticket introuvable!' 
+    });
+  }
+
+  // Find or create tickets category using the custom Discord category
+  let category;
+  if (ticketCategory.discordCategoryId) {
+    try {
+      category = await guild.channels.fetch(ticketCategory.discordCategoryId);
+      if (!category || category.type !== ChannelType.GuildCategory) {
+        // Fallback if custom category doesn't exist anymore
+        category = guild.channels.cache.find((c: any) => c.name === 'Tickets' && c.type === ChannelType.GuildCategory);
+      }
+    } catch (error) {
+      console.error('Error fetching custom Discord category:', error);
+      category = guild.channels.cache.find((c: any) => c.name === 'Tickets' && c.type === ChannelType.GuildCategory);
+    }
+  } else {
+    category = guild.channels.cache.find((c: any) => c.name === 'Tickets' && c.type === ChannelType.GuildCategory);
+  }
   
   if (!category) {
     try {
@@ -115,12 +141,12 @@ export async function handleTicketButtons(interaction: any) {
         ],
       });
     } catch (error) {
-      return interaction.reply({ content: 'Failed to create tickets category!', ephemeral: true });
+      return interaction.editReply({ content: 'Impossible de créer la catégorie tickets!' });
     }
   }
 
   // Create ticket channel
-  const ticketId = `ticket-${type}-${Date.now()}`;
+  const ticketId = `ticket-${categoryKey}-${Date.now()}`;
   
   try {
     const ticketChannel = await guild.channels.create({
@@ -150,19 +176,22 @@ export async function handleTicketButtons(interaction: any) {
       userId: member.user.id,
       guildId: guild.id,
       channelId: ticketChannel.id,
-      ticketType: type,
+      ticketType: categoryKey,
       categoryId: category.id
     });
 
-    // Create ticket embed
+    // Create ticket embed with custom category information
+    const defaultDescription = `Bonjour ${member.user.tag}! Veuillez décrire votre problème et quelqu'un vous aidera bientôt.`;
+    const embedDescription = ticketCategory.openMessage || defaultDescription;
+    
     const ticketEmbed = new EmbedBuilder()
-      .setTitle(`${type.charAt(0).toUpperCase() + type.slice(1)} Support Ticket`)
-      .setDescription(`Hello ${member.user.tag}! Please describe your issue and someone will help you soon.`)
+      .setTitle(`${ticketCategory.categoryName} - Ticket`)
+      .setDescription(embedDescription)
       .setColor(0x0099FF)
       .addFields(
-        { name: 'Ticket Type', value: type, inline: true },
-        { name: 'Created by', value: `<@${member.user.id}>`, inline: true },
-        { name: 'Created at', value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: false }
+        { name: 'Type de Ticket', value: ticketCategory.categoryName, inline: true },
+        { name: 'Créé par', value: `<@${member.user.id}>`, inline: true },
+        { name: 'Créé le', value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: false }
       )
       .setTimestamp();
 
@@ -171,7 +200,7 @@ export async function handleTicketButtons(interaction: any) {
       .addComponents(
         new ButtonBuilder()
           .setCustomId(`close_ticket_${ticketId}`)
-          .setLabel('Close Ticket')
+          .setLabel('Fermer le Ticket')
           .setStyle(ButtonStyle.Danger)
           .setEmoji('🔒')
       );
@@ -182,13 +211,12 @@ export async function handleTicketButtons(interaction: any) {
       components: [closeButton] 
     });
 
-    await interaction.reply({ 
-      content: `Ticket created! Please go to <#${ticketChannel.id}>`, 
-      ephemeral: true 
+    await interaction.editReply({ 
+      content: `Ticket créé! Rendez-vous dans <#${ticketChannel.id}>` 
     });
   } catch (error) {
     console.error('Error creating ticket:', error);
-    await interaction.reply({ content: 'Failed to create ticket!', ephemeral: true });
+    await interaction.editReply({ content: 'Impossible de créer le ticket!' });
   }
 }
 
@@ -197,7 +225,7 @@ export async function handleCloseTicket(interaction: any) {
   const ticket = await TicketDB.findByTicketId(ticketId);
 
   if (!ticket) {
-    return interaction.reply({ content: 'Ticket not found!', ephemeral: true });
+    return interaction.reply({ content: 'Ticket not found!', flags: MessageFlags.Ephemeral });
   }
 
   // Check if user has permission to close ticket
@@ -205,7 +233,7 @@ export async function handleCloseTicket(interaction: any) {
                    interaction.member.permissions.has(PermissionFlagsBits.ManageChannels);
 
   if (!canClose) {
-    return interaction.reply({ content: 'You do not have permission to close this ticket!', ephemeral: true });
+    return interaction.reply({ content: 'You do not have permission to close this ticket!', flags: MessageFlags.Ephemeral });
   }
 
   // Confirmation buttons
@@ -224,7 +252,7 @@ export async function handleCloseTicket(interaction: any) {
   await interaction.reply({
     content: 'Are you sure you want to close this ticket?',
     components: [confirmRow],
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 }
 
@@ -233,7 +261,7 @@ export async function handleConfirmClose(interaction: any) {
   const ticket = await TicketDB.findByTicketId(ticketId);
 
   if (!ticket) {
-    return interaction.reply({ content: 'Ticket not found!', ephemeral: true });
+    return interaction.reply({ content: 'Ticket not found!', flags: MessageFlags.Ephemeral });
   }
 
   try {
@@ -248,6 +276,108 @@ export async function handleConfirmClose(interaction: any) {
     // The channel will be deleted, so we don't need to reply
   } catch (error) {
     console.error('Error closing ticket:', error);
-    await interaction.reply({ content: 'Failed to close ticket!', ephemeral: true });
+    await interaction.reply({ content: 'Failed to close ticket!', flags: MessageFlags.Ephemeral });
+  }
+}
+
+export async function handleRoleGroupSelection(interaction: any) {
+  try {
+    const [, , , userId, groupId] = interaction.customId.split('_');
+    const selectedRoleId = interaction.values[0];
+    
+    // Check if the user is authorized to make this selection
+    if (interaction.user.id !== userId) {
+      return interaction.reply({ 
+        content: 'Vous n\'êtes pas autorisé à utiliser ce menu !', 
+        flags: MessageFlags.Ephemeral 
+      });
+    }
+
+    const guild = interaction.guild;
+    const member = interaction.member;
+    const role = guild.roles.cache.get(selectedRoleId);
+
+    if (!role) {
+      return interaction.reply({ 
+        content: 'Le rôle sélectionné n\'existe plus !', 
+        flags: MessageFlags.Ephemeral 
+      });
+    }
+
+    // Check if user already has the role
+    if (member.roles.cache.has(role.id)) {
+      return interaction.reply({ 
+        content: 'Vous avez déjà ce rôle !', 
+        flags: MessageFlags.Ephemeral 
+      });
+    }
+
+    // Check if user already has a pending request for this role
+    const existingRequest = await RoleRequestDB.findByUserAndRole(member.user.id, role.id);
+    if (existingRequest && existingRequest.status === 'pending') {
+      return interaction.reply({ 
+        content: 'Vous avez déjà une demande en attente pour ce rôle !', 
+        flags: MessageFlags.Ephemeral 
+      });
+    }
+
+    // Create role request embed
+    const requestEmbed = new EmbedBuilder()
+      .setTitle('Demande de Rôle (Groupe)')
+      .setDescription(`${member.user.tag} a demandé le rôle **${role.name}** depuis un groupe de rôles.`)
+      .setColor(role.color || 0x0099FF)
+      .setThumbnail(member.user.displayAvatarURL())
+      .addFields(
+        { name: 'Utilisateur', value: `<@${member.user.id}>`, inline: true },
+        { name: 'Rôle', value: `<@&${role.id}>`, inline: true },
+        { name: 'Demandé le', value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: false }
+      )
+      .setTimestamp();
+
+    // Create buttons
+    const actionRow = new ActionRowBuilder<ButtonBuilder>()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId(`approve_role_${member.user.id}_${role.id}`)
+          .setLabel('Approuver')
+          .setStyle(ButtonStyle.Success)
+          .setEmoji('✅'),
+        new ButtonBuilder()
+          .setCustomId(`deny_role_${member.user.id}_${role.id}`)
+          .setLabel('Refuser')
+          .setStyle(ButtonStyle.Danger)
+          .setEmoji('❌')
+      );
+
+    // Store request in database
+    await RoleRequestDB.create({
+      userId: member.user.id,
+      roleId: role.id,
+      guildId: guild.id
+    });
+
+    // Send the request in the same channel where the command was used
+    await interaction.channel.send({ embeds: [requestEmbed], components: [actionRow] });
+
+    // Update the original message to disable the select menu
+    await interaction.update({ 
+      content: `✅ Votre demande pour le rôle **${role.name}** a été soumise pour approbation !`,
+      embeds: [],
+      components: []
+    });
+
+  } catch (error) {
+    console.error('Error handling role group selection:', error);
+    
+    if (!interaction.replied && !interaction.deferred) {
+      try {
+        await interaction.reply({ 
+          content: 'Une erreur est survenue lors du traitement de votre sélection.', 
+          flags: MessageFlags.Ephemeral 
+        });
+      } catch (replyError) {
+        console.error('Failed to send error reply:', replyError);
+      }
+    }
   }
 }
