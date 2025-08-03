@@ -126,29 +126,82 @@ export async function handleIndividualRole(interaction: any) {
       });
     }
 
-    const guild = interaction.guild;
-    console.log(`🏰 [INDIVIDUAL ROLE] Récupération des rôles pour le serveur ${guild.name} (${guild.id})`);
-    const availableRoles = guild.roles.cache
-      .filter((role: any) => !role.managed && role.name !== '@everyone')
-      .first(25); // Discord limit
+    // Show modal for role search
+    const modal = new ModalBuilder()
+      .setCustomId(`role_search_modal_${userId}`)
+      .setTitle('🔍 Rechercher un rôle');
 
-    console.log(`📊 [INDIVIDUAL ROLE] ${availableRoles.length} rôle(s) disponible(s) trouvé(s)`);
+    const searchInput = new TextInputBuilder()
+      .setCustomId('roleSearchQuery')
+      .setLabel('Nom du rôle à rechercher')
+      .setStyle(TextInputStyle.Short)
+      .setPlaceholder('Ex: Membre, Admin, Modérateur...')
+      .setRequired(true)
+      .setMaxLength(50)
+      .setMinLength(2);
 
-    if (availableRoles.length === 0) {
-      console.log(`⚠️ [INDIVIDUAL ROLE] Aucun rôle disponible sur le serveur ${guild.name}`);
-      return interaction.update({
-        content: 'Aucun rôle disponible sur ce serveur.',
-        embeds: [],
-        components: []
+    const firstRow = new ActionRowBuilder<TextInputBuilder>()
+      .addComponents(searchInput);
+    
+    modal.addComponents(firstRow);
+
+    console.log(`🔍 [INDIVIDUAL ROLE] Affichage du modal de recherche pour ${interaction.user.tag}`);
+    await interaction.showModal(modal);
+
+  } catch (error) {
+    console.error(`💥 [INDIVIDUAL ROLE] Erreur lors de l'affichage du modal de recherche:`, error);
+    await interaction.reply({ 
+      content: 'Une erreur est survenue lors de l\'ouverture de la recherche de rôles.', 
+      flags: MessageFlags.Ephemeral 
+    });
+  }
+}
+
+// Handle role search modal submission
+export async function handleRoleSearchModal(interaction: any) {
+  try {
+    console.log(`🔍 [ROLE SEARCH] Début du traitement de recherche de rôle par ${interaction.user.tag}`);
+    
+    const [, , , userId] = interaction.customId.split('_');
+    
+    if (interaction.user.id !== userId) {
+      console.log(`❌ [ROLE SEARCH] Accès refusé - Utilisateur ${interaction.user.tag} tente d'utiliser le modal d'un autre utilisateur`);
+      return interaction.reply({ 
+        content: 'Vous n\'êtes pas autorisé à utiliser ce formulaire !', 
+        flags: MessageFlags.Ephemeral 
       });
     }
 
-    console.log(`🎨 [INDIVIDUAL ROLE] Création du menu de sélection avec ${availableRoles.length} option(s)`);
+    const searchQuery = interaction.fields.getTextInputValue('roleSearchQuery').trim().toLowerCase();
+    console.log(`🔍 [ROLE SEARCH] Recherche pour: "${searchQuery}"`);
+
+    const guild = interaction.guild;
+    
+    // Search for roles matching the query
+    const matchingRoles = guild.roles.cache
+      .filter((role: any) => 
+        !role.managed && 
+        role.name !== '@everyone' && 
+        role.name.toLowerCase().includes(searchQuery)
+      )
+      .first(25); // Discord limit
+
+    console.log(`📊 [ROLE SEARCH] ${matchingRoles.length} rôle(s) correspondant(s) trouvé(s)`);
+
+    if (matchingRoles.length === 0) {
+      console.log(`⚠️ [ROLE SEARCH] Aucun rôle trouvé pour "${searchQuery}"`);
+      return interaction.reply({
+        content: `❌ Aucun rôle trouvé correspondant à "${searchQuery}". Essayez avec un autre terme de recherche.`,
+        flags: MessageFlags.Ephemeral
+      });
+    }
+
+    // Create select menu with matching roles
     const selectMenu = new StringSelectMenuBuilder()
       .setCustomId(`role_select_${userId}`)
-      .setPlaceholder('Choisissez un rôle à demander')
+      .setPlaceholder(`${matchingRoles.length} rôle(s) trouvé(s) pour "${searchQuery}"`)
       .addOptions(
-        availableRoles.map((role: any) => ({
+        matchingRoles.map((role: any) => ({
           label: role.name,
           value: role.id,
           description: `Demander le rôle ${role.name}`,
@@ -165,27 +218,37 @@ export async function handleIndividualRole(interaction: any) {
           .setCustomId(`role_request_${userId}`)
           .setLabel('Retour')
           .setStyle(ButtonStyle.Secondary)
-          .setEmoji('🔙')
+          .setEmoji('🔙'),
+        new ButtonBuilder()
+          .setCustomId(`role_individual_${userId}`)
+          .setLabel('Nouvelle recherche')
+          .setStyle(ButtonStyle.Primary)
+          .setEmoji('🔍')
       );
 
-    console.log(`📝 [INDIVIDUAL ROLE] Création de l'embed de sélection de rôle`);
-
     const embed = new EmbedBuilder()
-      .setTitle('🎭 Sélection de Rôle Individuel')
-      .setDescription('Choisissez le rôle que vous souhaitez demander')
-      .setColor(0x0099FF);
+      .setTitle('🔍 Résultats de recherche')
+      .setDescription(`**${matchingRoles.length}** rôle(s) trouvé(s) pour "${searchQuery}"`)
+      .setColor(0x0099FF)
+      .addFields({
+        name: 'Rôles trouvés',
+        value: matchingRoles.map((role: any) => `• ${role.name}`).join('\n'),
+        inline: false
+      });
 
-    console.log(`📤 [INDIVIDUAL ROLE] Envoi de la réponse de sélection de rôle`);
-    await interaction.update({ 
+    console.log(`📤 [ROLE SEARCH] Envoi des résultats de recherche`);
+    await interaction.reply({ 
       embeds: [embed], 
-      components: [actionRow, backRow] 
+      components: [actionRow, backRow],
+      flags: MessageFlags.Ephemeral
     });
-    console.log(`✅ [INDIVIDUAL ROLE] Sélection de rôle individuel traitée avec succès pour ${interaction.user.tag}`);
+    
+    console.log(`✅ [ROLE SEARCH] Recherche de rôle traitée avec succès pour ${interaction.user.tag}`);
 
   } catch (error) {
-    console.error(`💥 [INDIVIDUAL ROLE] Erreur lors du traitement du rôle individuel pour ${interaction.user.tag} :`, error);
+    console.error(`💥 [ROLE SEARCH] Erreur lors du traitement de la recherche de rôle:`, error);
     await interaction.reply({ 
-      content: 'Une erreur est survenue.', 
+      content: 'Une erreur est survenue lors de la recherche de rôles.', 
       flags: MessageFlags.Ephemeral 
     });
   }

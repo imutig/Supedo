@@ -268,11 +268,11 @@ export async function handleCloseTicket(interaction: any) {
     .addComponents(
       new ButtonBuilder()
         .setCustomId(`confirm_close_${ticketId}`)
-        .setLabel('Yes, Close')
+        .setLabel('Oui, fermer le ticket')
         .setStyle(ButtonStyle.Danger),
       new ButtonBuilder()
         .setCustomId('cancel_close')
-        .setLabel('Cancel')
+        .setLabel('Annuler la fermeture')
         .setStyle(ButtonStyle.Secondary)
     );
 

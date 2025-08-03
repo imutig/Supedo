@@ -1,53 +1,27 @@
-# 🤖 Supedo - Bot Discord ### 🎭 **Gestion Avancée des Rôles**
-- 🎯 **Système d'Approbation** - Demandes de rôles avec validation par les modérateurs
-- 👥 **Groupes de Rôles** - Organisation en groupes avec permissions spécifiques
-- ➕ **Ajout/Retrait** - Système unifié pour ajouter et retirer des rôles
-- ⏱️ **Gestion en Attente** - Interface pour gérer toutes les demandes en cours
+# Supedo - Bot Discord
 
-> **Bot Discord** avec système de tickets personnalisable et gestion avancée des rôles pour GrandLineFA
+Bot Discord simple pour la gestion des tickets et des rôles avec système d'approbation.
 
-<div align="center">
+## Fonctionnalités
 
-![Discord.js](https://img.shields.io/badge/Discord.js-v14-5865F2?style=for-the-badge&logo=discord&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
-![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+**Système de Tickets**
+- Création de tickets avec catégories personnalisées
+- Panels configurables avec boutons colorés
+- Renommage et fermeture de tickets
+- Intégration avec les catégories Discord
 
-</div>
+**Gestion des Rôles**
+- Demandes de rôles avec approbation
+- Groupes de rôles organisés
+- Recherche de rôles par nom
+- Interface d'administration pour les modérateurs
 
----
+## Installation
 
-## ✨ Fonctionnalités Principales
-
-### � **Système de Tickets Avancé**
-- 📋 **Panels Personnalisables** - Créez des panels de tickets avec titre, description et couleurs
-- 🏷️ **Catégories Personnalisées** - Définissez vos propres catégories avec boutons colorés
-- 🎨 **4 Styles de Boutons** - Primaire (bleu), Secondaire (gris), Succès (vert), Danger (rouge)
-- 📁 **Intégration Discord** - Assignation automatique aux catégories Discord
-- ✏️ **Renommage de Tickets** - Les utilisateurs peuvent renommer leurs tickets
-- 🔒 **Fermeture Sécurisée** - Confirmation avant fermeture
-- 📊 **Statistiques Complètes** - Suivi des tickets par catégorie
-
-### � **Gestion Avancée des Rôles**
-- 🎯 **Système d'Approbation** - Demandes de rôles avec validation par les modérateurs
-- 👥 **Groupes de Rôles** - Organisation en groupes avec permissions spécifiques
-- ➕ **Ajout/Retrait** - Système unifié pour ajouter et retirer des rôles
-- 📬 **Notifications DM** - Messages privés automatiques pour les demandes
-- ⏱️ **Gestion en Attente** - Interface pour gérer toutes les demandes en cours
-
-### 🛠️ **Interface Utilisateur**
-- 🖱️ **Boutons Interactifs** - Interface moderne avec boutons Discord
-- 📝 **Modals Intuitifs** - Formulaires pour la saisie d'informations
-- 🎛️ **Menus Déroulants** - Navigation facile entre les options
-- 🔄 **Temps Réel** - Mises à jour instantanées des statuts
-
----
-
-## 🚀 Installation & Configuration
-
-### 📋 Prérequis
-- **Node.js** 18.0.0+ ([Télécharger](https://nodejs.org/))
-- **MySQL** 8.0+ ([Télécharger](https://mysql.com/downloads/))
+### Prérequis
+- Node.js 18+
+- MySQL 8+
+- Bot Discord créé sur le portail développeur
 - **Application Discord** avec token bot
 - **Serveur Discord** avec permissions appropriées
 
@@ -73,159 +47,102 @@ FLUSH PRIVILEGES;
 ```
 
 #### 4. 🔧 **Variables d'Environnement**
-Créez un fichier `.env` :
-```env
-# Discord Configuration
-DISCORD_TOKEN=votre_token_discord
-CLIENT_ID=id_de_votre_application
-GUILD_ID=id_de_votre_serveur (optionnel pour dev)
+### Configuration
 
-# Database Configuration
+1. Cloner le projet
+```bash
+git clone https://github.com/imutig/Supedo.git
+cd Supedo
+```
+
+2. Installer les dépendances
+```bash
+npm install
+```
+
+3. Configurer la base de données MySQL
+```sql
+CREATE DATABASE supedo_bot;
+CREATE USER 'supedo_user'@'localhost' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON supedo_bot.* TO 'supedo_user'@'localhost';
+```
+
+4. Créer le fichier `.env`
+```env
+DISCORD_TOKEN=your_bot_token
+CLIENT_ID=your_application_id
+GUILD_ID=your_guild_id
+
 DB_HOST=localhost
 DB_PORT=3306
 DB_USERNAME=supedo_user
-DB_PASSWORD=votre_mot_de_passe
+DB_PASSWORD=your_password
 DB_DATABASE=supedo_bot
 
-# Environment
 NODE_ENV=production
 ```
 
-#### 5. 🔨 **Build et Déploiement**
+5. Compiler et démarrer
 ```bash
-# Compiler le TypeScript
 npm run build
-
-# Déployer les commandes slash
 npm run deploy
-
-# Démarrer le bot
 npm start
 ```
 
----
+## Utilisation
 
-## 📚 Guide d'Utilisation
+### Commandes
 
-### 🎫 **Gestion des Tickets**
-
-#### **Commande Principale**
-```
-/ticket
-```
-**Menu Principal** avec les options :
-- 📋 **Créer un Panel** - Nouveau panel dans un salon
-- ⚙️ **Gérer Catégories** - Créer/modifier les catégories
-- 🎨 **Personnaliser** - Modifier l'apparence des panels
-- 📊 **Statistiques** - Voir les stats des tickets
-- 🗑️ **Supprimer Panel** - Retirer un panel existant
-- 📝 **Lister Panels** - Voir tous les panels actifs
-
-#### **Création de Catégories**
-1. Sélectionnez la catégorie Discord de destination
-2. Choisissez le style de bouton (couleur)
+- `/ticket` - Gestion des tickets
+- `/role` - Gestion des rôles
+- `/info` - Informations du bot
 3. Remplissez le formulaire :
-   - **Clé** : Identifiant unique (ex: `support`, `bug`)
-   - **Nom** : Nom affiché (ex: "Support Technique")
-   - **Bouton** : Texte du bouton (ex: "Obtenir de l'aide")
-   - **Emoji** : Emoji optionnel (ex: 🎫)
-   - **Message** : Message automatique à l'ouverture
+### Configuration des Tickets
 
-#### **Actions sur les Tickets**
-- ✏️ **Renommer** : Modifier le nom du channel
-- 🔒 **Fermer** : Fermer avec confirmation
+1. Utiliser `/ticket` pour accéder au menu
+2. Créer des catégories avec clé, nom et style de bouton
+3. Créer un panel dans un salon
+4. Les utilisateurs peuvent cliquer sur les boutons pour créer des tickets
 
-### 🎭 **Gestion des Rôles**
+### Configuration des Rôles
 
-#### **Commande Principale**
+1. Utiliser `/role` pour le menu de gestion
+2. Les utilisateurs demandent des rôles
+3. Les modérateurs approuvent/refusent via boutons
+4. Système de groupes de rôles disponible
+
+## Structure
+
 ```
-/role
+src/
+├── commands/          # Commandes slash
+├── events/            # Gestionnaires d'événements
+├── utils/             # Utilitaires et handlers
+│   ├── entities/      # Entités TypeORM
+│   ├── buttonHandler.ts
+│   ├── roleMenuHandler.ts
+│   ├── ticketMenuHandler.ts
+│   └── database.ts
+└── scripts/           # Scripts de maintenance
 ```
-**Menu de Gestion** avec :
-- 🎯 **Demander un Rôle** - Faire une demande d'ajout
-- ➖ **Retirer un Rôle** - Faire une demande de retrait
-- 👥 **Groupes de Rôles** - Gérer les groupes
-- ⏱️ **Demandes en Attente** - Voir les demandes (modérateurs)
 
-#### **Workflow d'Approbation**
-1. **Utilisateur** fait une demande via `/role`
-2. **Système** envoie une notification aux modérateurs
-3. **Modérateur** approuve ou refuse via les boutons
-4. **Rôle** est attribué ou refusé automatiquement
+## Base de données
 
----
+Tables principales:
+- `ticket_categories` - Catégories de tickets
+- `ticket_panels` - Panels de tickets  
+- `tickets` - Tickets individuels
+- `role_requests` - Demandes de rôles
+- `role_groups` - Groupes de rôles
 
-## 🗄️ Structure de la Base de Données
-
-### **Tables Principales**
-
-#### `ticket_categories` - Catégories de Tickets
-- `id` - Identifiant unique
-- `guildId` - ID du serveur Discord
-- `categoryKey` - Clé unique de la catégorie
-- `categoryName` - Nom affiché
-- `buttonLabel` - Texte du bouton
-- `buttonEmoji` - Emoji du bouton
-- `buttonStyle` - Style du bouton (1-4)
-- `discordCategoryId` - ID de la catégorie Discord
-- `openMessage` - Message d'ouverture automatique
-
-#### `ticket_panels` - Panels de Tickets
-- `id` - Identifiant unique
-- `guildId` - ID du serveur Discord
-- `channelId` - ID du canal Discord
-- `messageId` - ID du message panel
-- `panelTitle` - Titre du panel
-- `panelDescription` - Description du panel
-- `panelColor` - Couleur du panel
-- `createdBy` - ID du créateur
-- `createdAt` - Date de création
-
-#### `role_requests` - Demandes de Rôles
-- `id` - Identifiant unique
-- `userId` - ID de l'utilisateur
-- `roleId` - ID du rôle demandé
-- `guildId` - ID du serveur Discord
-- `requestType` - Type (`add` | `remove`)
-- `status` - Statut (`pending` | `approved` | `denied`)
-- `requestedAt` - Date de demande
-
-#### `tickets` - Tickets Individuels
-- `id` - Identifiant unique
-- `ticketId` - ID unique du ticket
-- `userId` - ID du créateur
-- `guildId` - ID du serveur Discord
-- `channelId` - ID du canal créé
-- `ticketType` - Type/catégorie du ticket
-- `status` - Statut (`open` | `closed`)
-- `createdAt` - Date de création
-- `closedAt` - Date de fermeture
-
----
-
-## 🎨 Personnalisation
-
-### **Styles de Boutons**
-| Style | Couleur | Usage Recommandé |
-|-------|---------|------------------|
-| `1` - Primaire | 🔵 Bleu | Actions principales |
-| `2` - Secondaire | ⚪ Gris | Actions secondaires |
-| `3` - Succès | 🟢 Vert | Confirmations positives |
-| `4` - Danger | 🔴 Rouge | Actions destructives |
-
-### **Permissions Requises**
-- `Gérer les Canaux` - Pour créer/supprimer les tickets
-- `Gérer les Rôles` - Pour la gestion des rôles
-- `Envoyer des Messages` - Pour les interactions
-- `Utiliser les Emojis Externes` - Pour les emojis personnalisés
-
----
-
-## 🛠️ Scripts Utiles
+## Scripts
 
 ```bash
-# Développement avec rechargement automatique
-npm run dev
+npm run dev          # Développement
+npm run build        # Compilation  
+npm run deploy       # Déployer les commandes
+npm run cleanup-db   # Nettoyer la base de données
+```
 
 # Compilation TypeScript
 npm run build
